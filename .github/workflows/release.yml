@@ -1,0 +1,298 @@
+name: Release
+
+# ============================================================================
+# Unified Release
+#
+# Single entry point for releases. On push of a v*.*.* tag:
+#
+#   android ─┐
+#   windows ─┤
+#   linux ───┼──→ publish
+#   macos ───┘
+#
+# Each platform is a reusable workflow (workflow_call). The publish job
+# declares `needs: [android, windows, linux, macos]` — GitHub Actions
+# itself enforces the all-four-success gate, no polling, no API queries,
+# no SHA tracking, no gh run watch.
+# ============================================================================
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+# 同一个 tag 的 release 只能同时跑一个。tag 名本身就是 stable key,
+# 多次 push 同一 tag 也只会串行化,不会重复 publish。
+concurrency:
+  group: release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  android:
+    name: Android APK
+    uses: ./.github/workflows/android-build.yml
+    with:
+      ref: ${{ github.ref }}
+
+  windows:
+    name: Windows x64
+    uses: ./.github/workflows/windows-build.yml
+    with:
+      ref: ${{ github.ref }}
+
+  linux:
+    name: Linux x64
+    uses: ./.github/workflows/linux-build.yml
+    with:
+      ref: ${{ github.ref }}
+
+  macos:
+    name: macOS
+    uses: ./.github/workflows/macos-build.yml
+    with:
+      ref: ${{ github.ref }}
+
+  publish:
+    name: Publish GitHub Release
+    needs:
+      - android
+      - windows
+      - linux
+      - macos
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      REPO: ${{ github.repository }}
+      CURRENT_TAG: ${{ github.ref_name }}
+
+    steps:
+      # ----------------------------------------------------------------------
+      # 1. Checkout
+      #
+      # 用发布 tag 本身的 checkout。GitHub Actions 在 tag push 时
+      # 默认 checkout 已经是这个 tag,这里显式写一下更清晰。
+      # ----------------------------------------------------------------------
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 0
+
+      # ----------------------------------------------------------------------
+      # 2. Download all 4 platform artifacts
+      #
+      # 同一个 workflow run 里 4 个 build job 用统一 name 命名:
+      #   release-artifacts-android / -windows / -linux / -macos
+      #
+      # actions/download-artifact 默认会把 artifact 内容下载到
+      # 名字相同的目录,4 个目录分别落到 ./release-artifacts-android/ 等。
+      # ----------------------------------------------------------------------
+      - name: Download Android artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts-android
+          path: artifacts/android
+
+      - name: Download Windows artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts-windows
+          path: artifacts/windows
+
+      - name: Download Linux artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts-linux
+          path: artifacts/linux
+
+      - name: Download macOS artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts-macos
+          path: artifacts/macos
+
+      # ----------------------------------------------------------------------
+      # 3. Find previous release tag for changelog link
+      # ----------------------------------------------------------------------
+      - name: Determine previous release tag
+        id: prev
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          current="$CURRENT_TAG"
+
+          # 找上一个版本 tag。剔除当前 tag,按 semver 倒序。
+          prev=$(
+            git tag --sort=-version:refname \
+              | grep -E '^v?[0-9]+\.[0-9]+\.[0-9]+([-.].*)?$' \
+              | grep -Fxv "$current" \
+              | head -1 \
+              || true
+          )
+
+          echo "Current tag : $current"
+          echo "Previous tag: ${prev:-<none>}"
+
+          echo "previous=$prev" >> "$GITHUB_OUTPUT"
+
+      # ----------------------------------------------------------------------
+      # 4. Stage release assets (flatten + dedupe)
+      # ----------------------------------------------------------------------
+      - name: Stage release assets
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          rm -rf staged-release
+          mkdir -p staged-release
+
+          echo "=== Downloaded artifacts ==="
+          find artifacts -type f -print | sort
+
+          echo
+          echo "=== Selecting release assets ==="
+
+          # ------------------------------------------------------------
+          # 只从每个平台 artifact 中取发行文件。
+          #
+          # 不把 Flutter 应用目录内部文件放进 GitHub Release。
+          # tar.gz / zip 本身已经包含完整应用。
+          # ------------------------------------------------------------
+
+          find artifacts -type f \
+            \( \
+              -name '*.apk' \
+              -o -name '*.zip' \
+              -o -name '*.tar.gz' \
+            \) \
+            -exec cp {} staged-release/ \;
+
+          # ------------------------------------------------------------
+          # SHA256SUMS 每个平台都有一个，不能直接全部复制。
+          #
+          # 分别重命名成：
+          #
+          # SHA256SUMS-android
+          # SHA256SUMS-windows
+          # SHA256SUMS-linux
+          # SHA256SUMS-macos
+          # ------------------------------------------------------------
+
+          for platform in android windows linux macos; do
+            src=$(find "artifacts/$platform" \
+              -maxdepth 1 \
+              -type f \
+              -name 'SHA256SUMS' \
+              -print -quit)
+
+            if [[ -z "$src" ]]; then
+              echo "::error::Missing SHA256SUMS for $platform"
+              exit 1
+            fi
+
+            cp "$src" "staged-release/SHA256SUMS-$platform"
+          done
+
+          echo
+          echo "=== Final release assets ==="
+          ls -lah staged-release
+
+          # ------------------------------------------------------------
+          # 最低限检查：
+          # 4 个 SHA256SUMS + 至少一个发行包
+          # ------------------------------------------------------------
+
+          count=$(find staged-release -maxdepth 1 -type f | wc -l)
+
+          if [[ "$count" -lt 5 ]]; then
+            echo "::error::Expected at least 5 release assets, got $count"
+            exit 1
+          fi
+
+      # ----------------------------------------------------------------------
+      # 5. Generate release notes
+      # ----------------------------------------------------------------------
+      - name: Generate release notes
+        id: notes
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          current="$CURRENT_TAG"
+          previous="${{ steps.prev.outputs.previous }}"
+
+          if [[ -n "$previous" ]]; then
+            compare_url="https://github.com/$REPO/compare/$previous...$current"
+
+            cat > release-notes.md <<EOF
+          **Full Changelog**: $compare_url
+          EOF
+          else
+            cat > release-notes.md <<'EOF'
+          Initial release.
+          EOF
+          fi
+
+          echo "=== Release notes prefix ==="
+          cat release-notes.md
+
+      # ----------------------------------------------------------------------
+      # 6. Create / update Release
+      # ----------------------------------------------------------------------
+      - name: Publish release
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          current="$CURRENT_TAG"
+
+          # prerelease:
+          #   v1.2.3-beta
+          #   v1.2.3-rc.1
+          #   v1.2.3-dev
+          #
+          # 只要 tag 中存在 "-" 就认为是 prerelease。
+          prerelease_args=()
+
+          if [[ "$current" == *-* ]]; then
+            prerelease_args+=(--prerelease)
+          fi
+
+          # ------------------------------------------------------------------
+          # Release 已存在:
+          #
+          # 典型场景:
+          # - Release workflow 被手动重新运行
+          # - 某个平台 artifact 后来重新生成
+          #
+          # 不重新生成 notes,避免覆盖人工修改过的 Release description。
+          # ------------------------------------------------------------------
+          if gh release view "$current" >/dev/null 2>&1; then
+            echo "Release $current already exists."
+            echo "Uploading assets only..."
+
+            gh release upload \
+              "$current" \
+              staged-release/* \
+              --clobber
+
+          else
+            echo "Creating release $current..."
+
+            gh release create \
+              "$current" \
+              staged-release/* \
+              --title "$current" \
+              --notes-file release-notes.md \
+              --generate-notes \
+              "${prerelease_args[@]}"
+          fi
+
+          echo
+          echo "✓ Release published: $current"

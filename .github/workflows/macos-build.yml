@@ -1,0 +1,151 @@
+name: macOS Build
+
+# Reusable workflow: invoked by .github/workflows/release.yml.
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build macOS bundle
+    runs-on: macos-latest
+    timeout-minutes: 60
+
+    steps:
+      # ------------------------------------------------------------
+      # Source
+      # ------------------------------------------------------------
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      # ------------------------------------------------------------
+      # Xcode
+      # ------------------------------------------------------------
+      - name: Select Xcode
+        run: |
+          sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+
+          echo "=== Xcode ==="
+          xcodebuild -version
+          xcode-select -p
+
+          echo
+          echo "=== macOS SDK ==="
+          xcrun --sdk macosx --show-sdk-version
+
+          echo
+          echo "=== macOS ==="
+          sw_vers
+
+      # ------------------------------------------------------------
+      # Flutter
+      # ------------------------------------------------------------
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Flutter doctor
+        run: flutter doctor -v
+
+      # ------------------------------------------------------------
+      # Dependencies
+      # ------------------------------------------------------------
+      - name: Flutter pub get
+        run: flutter pub get
+
+      # ------------------------------------------------------------
+      # Enable macOS desktop
+      # ------------------------------------------------------------
+      - name: Enable macOS desktop
+        run: |
+          flutter config --enable-macos-desktop
+          flutter devices
+
+      # ------------------------------------------------------------
+      # Build
+      # ------------------------------------------------------------
+      # macOS 上 just_audio 走系统 AVPlayer 后端,不需要 media_kit,
+      # 因此 pubspec 里没有 media_kit_libs_macos_audio。
+      - name: Build release bundle
+        run: |
+          flutter build macos \
+            --release \
+            --no-tree-shake-icons
+
+      # ------------------------------------------------------------
+      # Verify
+      # ------------------------------------------------------------
+      - name: Verify application
+        run: |
+          APP="build/macos/Build/Products/Release/asmr_two.app"
+
+          if [ ! -d "$APP" ]; then
+            echo "::error::Application missing at $APP"
+            echo "Actual build output:"
+            find build/macos -maxdepth 5 -type d -print 2>/dev/null || true
+            exit 1
+          fi
+
+          echo "=== Application ==="
+          ls -lh "$APP"
+
+          echo
+          echo "=== Contents ==="
+          find "$APP/Contents" -maxdepth 2 -type f -print | head -100
+
+          echo
+          echo "=== Architecture ==="
+          file "$APP/Contents/MacOS/asmr_two"
+
+          echo
+          echo "=== Dependencies ==="
+          otool -L "$APP/Contents/MacOS/asmr_two" || true
+
+      # ------------------------------------------------------------
+      # Package
+      # ------------------------------------------------------------
+      - name: Package artifact
+        run: |
+          APP="build/macos/Build/Products/Release/asmr_two.app"
+          STAGE="release-artifacts/asmr_two-macos"
+
+          rm -rf release-artifacts
+          mkdir -p "$STAGE"
+
+          cp -R "$APP" "$STAGE/"
+
+          cd release-artifacts
+
+          tar -czf asmr_two-macos.tar.gz \
+            asmr_two-macos
+
+          shasum -a 256 *.tar.gz > SHA256SUMS
+
+          echo
+          echo "=== Release artifacts ==="
+          ls -lh
+
+          echo
+          echo "=== SHA256SUMS ==="
+          cat SHA256SUMS
+
+      # Upload as workflow artifact. Platform-scoped name (no tag suffix)
+      # because all 4 build jobs in the calling workflow share the same
+      # workflow run — caller downloads by name.
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-artifacts-macos
+          path: release-artifacts/
+          retention-days: 7
