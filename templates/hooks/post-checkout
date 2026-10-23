@@ -1,0 +1,18 @@
+#!/bin/sh
+# 通用引导钩子:仓库里带 .githooks/ 就把 core.hooksPath 指过去。
+#
+# 这不是本项目专属的钩子 —— 它是 git 的"模板目录"里的一份通用引导,
+# 装成全局 init.templateDir 之后,以后 clone 出来的任何仓库:
+#   1. 首次 checkout 自动带上这个引导
+#   2. 引导发现仓库里有 .githooks/pre-commit,就把 core.hooksPath 接过去
+#   3. 仓库自己的 pre-commit 立刻生效,不需要再手工跑安装脚本
+#
+# 装法: bash tool/install_git_template.sh
+
+root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
+
+if [ -f "$root/.githooks/pre-commit" ]; then
+  git config core.hooksPath .githooks
+fi
+
+exit 0

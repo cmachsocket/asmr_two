@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+# Pre-commit 自检: 业务 widget 里硬编码数字 (padding/fontSize/iconSize/widget 尺寸)
+#
+# 触发条件: 任何 commit 包含 lib/ 下 .dart 文件
+# 失败动作: 列出违规位置 + exit 1 (阻止 commit)
+# 跳过方式: git commit --no-verify (紧急情况, commit message 写 why)
+#
+# 规则来自 tool/hardcoded_size_rules.txt(与 test/no_hardcoded_sizes_test.dart 共用),
+# 改规则只改那一个文件。
+#
+# 装法(二选一):
+#   bash tool/install_git_hooks.sh        # 只对本仓库生效
+#   bash tool/install_git_template.sh     # 全局模板,以后 clone 下来就自动生效
+
+set -e
+
+cd "$(git rev-parse --show-toplevel)"
+
+RULES="tool/hardcoded_size_rules.txt"
+
+if [ ! -f "$RULES" ]; then
+  echo "::error::规则文件缺失: $RULES"
+  exit 1
+fi
+
+# 收集 staged 的 lib/ 下 .dart 文件。
+#
+# app_spacing.dart 是比例式间距的令牌来源(里面的系数是"比例"不是"像素"),
+# 按定义允许出现数字,排除掉。
+staged=$(git diff --cached --name-only --diff-filter=ACMR \
+  | grep '^lib/.*\.dart$' \
+  | grep -v '^lib/core/theme/app_spacing\.dart$' \
+  || true)
+
+if [ -z "$staged" ]; then
+  exit 0
+fi
+
+violations=0
+
+echo "🔍 Pre-commit 自检: 业务 widget 硬编码数字..."
+echo
+
+check_pattern() {
+  local label="$1"
+  local pattern="$2"
+  local hits
+  hits=$(echo "$staged" | xargs grep -nE "$pattern" 2>/dev/null || true)
+  if [ -n "$hits" ]; then
+    echo "❌ [$label]"
+    echo "$hits" | sed 's/^/   /'
+    echo
+    violations=$((violations + 1))
+  fi
+}
+
+# 规则文件用重定向喂给 while,不用管道 —— 管道会让 while 跑在子 shell 里,
+# violations 的自增就丢。
+while IFS='|' read -r label pattern || [ -n "$label" ]; do
+  case "$label" in
+    ''|'#'*) continue ;;
+  esac
+  check_pattern "$label" "$pattern"
+done < "$RULES"
+
+if [ $violations -gt 0 ]; then
+  echo "❌ Pre-commit 失败: ${violations} 类违规"
+  echo
+  echo "修法:"
+  echo "  1. 用现成 widget (ListTile/Card/Padding 包主题子组件)"
+  echo "  2. 尺寸 → 走比例式工具 (lib/core/theme/app_spacing.dart 的写法)"
+  echo "  3. 字号 → Theme.of(context).textTheme.xxx"
+  echo "  4. 颜色 → Theme.of(context).colorScheme.xxx"
+  echo "  5. 紧急绕过: git commit --no-verify (commit message 写 why)"
+  echo
+  exit 1
+fi
+
+echo "✅ Pre-commit 通过: lib/ 下零硬编码数字"
+exit 0

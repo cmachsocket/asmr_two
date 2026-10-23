@@ -1,0 +1,15 @@
+#!/bin/sh
+# 通用引导钩子:仓库里带 .githooks/ 就把 core.hooksPath 指过去。
+#
+# 跟 post-checkout 同款,补的是"仓库后来才拿到 .githooks/"的情况
+# (例如 submodule 拉下来、或者从模板 clone 后才加的 hook)。
+#
+# 装法: bash tool/install_git_template.sh
+
+root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
+
+if [ -f "$root/.githooks/pre-commit" ]; then
+  git config core.hooksPath .githooks
+fi
+
+exit 0

@@ -1,0 +1,28 @@
+# Pre-commit 自检规则:业务 widget 里硬编码数字
+#
+# 格式:label|ERE 正则
+# 这份文件是唯一事实来源:
+#   - .githooks/pre-commit  (bash, 拦 commit)
+#   - test/no_hardcoded_sizes_test.dart  (dart, 无需装 hook 也生效, CI 也跑)
+# 改规则只改这里,两边同步生效。
+#
+# 合法命中(不拦):
+#   - EdgeInsets.zero (零内边距)
+#   - Duration(milliseconds:/seconds:/...)
+#   - CircularProgressIndicator(strokeWidth:)
+#   - 比例式写法 (shortestSide * 0.02 这类乘算里的系数)
+#
+# 规则来源: AGENTS.md "Code Style Guidelines"
+#   No hardcoded size values. All sizes must come from default tokens or
+#   ratio-based sizing.
+
+EdgeInsets.all 数字|EdgeInsets\.all\([0-9]
+EdgeInsets.symmetric|EdgeInsets\.symmetric\([^)]*[0-9]
+EdgeInsets.fromLTRB|EdgeInsets\.fromLTRB\([0-9]
+EdgeInsets.only|EdgeInsets\.only\([^)]*[0-9]
+SizedBox 宽高数字|SizedBox\(\s*(width|height):\s*[0-9]
+BorderRadius.circular|BorderRadius\.circular\([0-9]
+fontSize 数字|fontSize:\s*[0-9]
+iconSize 数字|iconSize:\s*[0-9]
+width: 数字|width:\s*[0-9]+(\.[0-9]+)?[,}]
+height: 数字|height:\s*[0-9]+(\.[0-9]+)?[,}]

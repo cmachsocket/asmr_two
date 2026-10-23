@@ -54,3 +54,20 @@ flutter analyze
 flutter test
 dart run tool/api_smoke_check.dart   # 对线上接口做一次冒烟检查
 ```
+
+## Git hooks
+
+```bash
+bash tool/install_git_template.sh   # 推荐：全局模板，以后 clone 下来自动生效
+bash tool/install_git_hooks.sh      # 只对这个仓库生效（不想动全局配置时用）
+python3 tool/find_magic_numbers.py  # 列出 lib/ 下还没命名的数字（仅 review，不拦）
+```
+
+pre-commit 拦「业务 widget 里的硬编码数字」（`EdgeInsets.all(12)`、`fontSize: 14`、
+`width: 120` 这类），按 AGENTS.md 的规矩，尺寸要来自主题或比例式工具。
+
+规则只维护 `tool/hardcoded_size_rules.txt` 一份，pre-commit 与
+`test/no_hardcoded_sizes_test.dart` 共用——后者让规则在 `flutter test`（本地与 CI）
+里也生效，没装 hook 也不会漏。紧急情况用 `git commit --no-verify`，并在 commit message
+里写清原因。
+
