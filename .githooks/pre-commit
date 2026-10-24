@@ -5,23 +5,25 @@
 # 失败动作: 列出违规位置 + exit 1 (阻止 commit)
 # 跳过方式: git commit --no-verify (紧急情况, commit message 写 why)
 #
-# 规则来自 tool/hardcoded_size_rules.txt(与 test/no_hardcoded_sizes_test.dart 共用),
-# 改规则只改那一个文件。
+# 规则来源: AGENTS.md "Code Style Guidelines"
+#   No hardcoded size values. All sizes must come from default tokens or
+#   ratio-based sizing.
+#   → 字号 → textTheme.xxx
+#   → 颜色 → colorScheme.xxx
+#   → 间距/圆角/容器尺寸 → 走主题、比例式工具或现成 widget
+#   → IconButton 大小 → 默认 24 (不写 iconSize)
 #
-# 装法(二选一):
-#   bash tool/install_git_hooks.sh        # 只对本仓库生效
-#   bash tool/install_git_template.sh     # 全局模板,以后 clone 下来就自动生效
+# 合法的硬编码 (允许命中):
+#   - EdgeInsets.zero (零内边距)
+#   - Duration(milliseconds:/seconds:/...)
+#   - CircularProgressIndicator(strokeWidth:)
+#   - 比例式写法 (shortestSide * 0.02 这类乘算里的系数)
+#
+# 安装: bash tool/install_git_hooks.sh
 
 set -e
 
 cd "$(git rev-parse --show-toplevel)"
-
-RULES="tool/hardcoded_size_rules.txt"
-
-if [ ! -f "$RULES" ]; then
-  echo "::error::规则文件缺失: $RULES"
-  exit 1
-fi
 
 # 收集 staged 的 lib/ 下 .dart 文件。
 #
@@ -54,14 +56,16 @@ check_pattern() {
   fi
 }
 
-# 规则文件用重定向喂给 while,不用管道 —— 管道会让 while 跑在子 shell 里,
-# violations 的自增就丢。
-while IFS='|' read -r label pattern || [ -n "$label" ]; do
-  case "$label" in
-    ''|'#'*) continue ;;
-  esac
-  check_pattern "$label" "$pattern"
-done < "$RULES"
+check_pattern "EdgeInsets.all 数字"   'EdgeInsets\.all\([0-9]'
+check_pattern "EdgeInsets.symmetric" 'EdgeInsets\.symmetric\([^)]*[0-9]'
+check_pattern "EdgeInsets.fromLTRB"  'EdgeInsets\.fromLTRB\([0-9]'
+check_pattern "EdgeInsets.only"      'EdgeInsets\.only\([^)]*[0-9]'
+check_pattern "SizedBox 宽高数字"    'SizedBox\(\s*(width|height):\s*[0-9]'
+check_pattern "BorderRadius.circular" 'BorderRadius\.circular\([0-9]'
+check_pattern "fontSize 数字"        'fontSize:\s*[0-9]'
+check_pattern "iconSize 数字"        'iconSize:\s*[0-9]'
+check_pattern "width: 数字"          'width:\s*[0-9]+(\.[0-9]+)?[,}]'
+check_pattern "height: 数字"         'height:\s*[0-9]+(\.[0-9]+)?[,}]'
 
 if [ $violations -gt 0 ]; then
   echo "❌ Pre-commit 失败: ${violations} 类违规"

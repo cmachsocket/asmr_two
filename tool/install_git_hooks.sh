@@ -5,8 +5,6 @@
 #   .git/ 不进版本库,clone 下来的人拿不到,每台机器都要手工重装一遍。
 #   core.hooksPath 指向仓库内的目录,脚本跟着代码一起走。
 #
-# 想让"clone 下来就自动生效",用 tool/install_git_template.sh(全局模板),不用这个。
-#
 # 用法: bash tool/install_git_hooks.sh
 
 set -euo pipefail
