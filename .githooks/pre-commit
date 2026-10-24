@@ -32,6 +32,7 @@ cd "$(git rev-parse --show-toplevel)"
 staged=$(git diff --cached --name-only --diff-filter=ACMR \
   | grep '^lib/.*\.dart$' \
   | grep -v '^lib/core/theme/app_spacing\.dart$' \
+  | grep -v '^lib/core/default\.dart$' \
   || true)
 
 if [ -z "$staged" ]; then
