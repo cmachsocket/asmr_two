@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import '../core/api/asmr_api.dart';
 import '../core/storage/session_store.dart';
 import '../state/auth_controller.dart';
-import '../state/work_feed_controller.dart';
+import '../controller/home_controller.dart';
 
 /// 依赖装配。
 ///
@@ -20,9 +20,6 @@ class AppBinding extends Bindings {
       fenix: true,
     );
 
-    Get.lazyPut<WorkFeedController>(
-      () => WorkFeedController(Get.find<AsmrApi>()),
-      fenix: true,
-    );
+    Get.lazyPut<HomeController>(() => HomeController(), fenix: true);
   }
 }

@@ -1,92 +1,135 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:responsive_builder/responsive_builder.dart';
 
-import '../core/theme/app_spacing.dart';
-import '../state/work_feed_controller.dart';
+import '../core/default.dart';
+import '../widgets/bottom_player.dart';
+import '../controller/home_controller.dart';
+
+import 'find_screen.dart';
+import 'search_screen.dart';
+import 'library_screen.dart';
+import 'settings_screen.dart';
+
+enum HomeScreenTab { find, search, library, settings }
 
 /// 首页，浏览作品列表。
-class HomeScreen extends GetView<WorkFeedController> {
+class HomeScreen extends GetView<HomeController> {
   const HomeScreen({super.key});
+
+  static const int maxPageIndex = 4;
+  static const int protraitFlex = 6;
+  static const int landscapeFlex = 5;
+  static const int bottomPlayerFlex = 1;
+
+  static Widget _screens(HomeScreenTab tab) {
+    switch (tab) {
+      case HomeScreenTab.find:
+        return const FindScreen();
+      case HomeScreenTab.search:
+        return const SearchScreen();
+      case HomeScreenTab.library:
+        return const LibraryScreen();
+      case HomeScreenTab.settings:
+        return const SettingsScreen();
+    }
+  }
+
+  static Bindings? _bindings(HomeScreenTab tab) {
+    switch (tab) {
+      case HomeScreenTab.find:
+        return FindScreenBinding();
+      case HomeScreenTab.search:
+        return SearchScreenBinding();
+      case HomeScreenTab.library:
+        return LibraryScreenBinding();
+      case HomeScreenTab.settings:
+        return SettingsScreenBinding();
+    }
+  }
+
+  static Widget _navigator(HomeScreenTab tab) {
+    final key = Get.nestedKey(DefaultValues.shellNavigatorId);
+    return NavigatorPopHandler(
+      onPopWithResult: (result) {
+        final navigator = key?.currentState;
+
+        if (navigator != null && navigator.canPop()) {
+          navigator.pop(result);
+        }
+      },
+      child: Navigator(
+        key: key,
+        initialRoute: '/',
+        onGenerateRoute: (settings) {
+          if (settings.name == '/') {
+            return GetPageRoute(
+              page: () => _screens(tab),
+              binding: _bindings(tab),
+            );
+          }
+          return null;
+        },
+      ),
+    );
+  }
+
+  static Widget _responsiveBody(HomeScreenTab i) {
+    return Column(
+      children: [
+        OrientationLayoutBuilder(
+          portrait: (_) => Expanded(flex: protraitFlex, child: _navigator(i)),
+          landscape: (_) => Expanded(flex: landscapeFlex, child: _navigator(i)),
+        ),
+        const Expanded(flex: bottomPlayerFlex, child: BottomPlayer()),
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('ASMR One'),
-        bottom: PreferredSize(
-          preferredSize: Size.fromHeight(AppSpacing.lg(context)),
-          child: Padding(
-            padding: AppSpacing.horizontal(context),
-            child: TextField(
-              textInputAction: TextInputAction.search,
-              decoration: const InputDecoration(
-                hintText: '搜索作品',
-                prefixIcon: Icon(Icons.search),
-                isDense: true,
-              ),
-              onSubmitted: controller.search,
-            ),
-          ),
-        ),
-      ),
-      body: Obx(() {
-        final works = controller.works;
-        final error = controller.error.value;
+    return MediaQuery(
+      data: MediaQuery.of(context).copyWith(viewInsets: DefaultValues.onlyZero),
+      child: SafeArea(
+        child: Obx(() {
+          final tailOfTheTab = maxPageIndex - 1;
+          final tabIndex = controller.index.value.clamp(0, tailOfTheTab);
+          return Scaffold(
+            appBar: AppBar(title: const Text('ASMR One')),
 
-        if (works.isEmpty && controller.loading.value) {
-          return const Center(child: CircularProgressIndicator());
-        }
+            body: _responsiveBody(HomeScreenTab.values[tabIndex]),
 
-        if (works.isEmpty && error != null) {
-          return _ErrorView(message: error, onRetry: controller.reload);
-        }
-
-        return RefreshIndicator(
-          onRefresh: controller.reload,
-          child: NotificationListener<ScrollNotification>(
-            onNotification: (notification) {
-              if (notification.metrics.extentAfter <= 0) {
-                controller.loadMore();
-              }
-              return false;
-            },
-            child: ListView.separated(
-              padding: AppSpacing.vertical(context),
-              itemCount: works.length + 1,
-              separatorBuilder: (context, index) => AppSpacing.gap(context),
-              itemBuilder: (context, index) {
-                if (index == works.length) {
-                  return controller.loading.value
-                      ? const Center(child: CircularProgressIndicator())
-                      : const SizedBox.shrink();
-                }
-                final work = works[index];
-                return ListTile(
-                  contentPadding: AppSpacing.horizontal(context),
-                  title: Text(
-                    work.title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  subtitle: Text(
-                    [
-                      work.circleName,
-                      if (work.release.isNotEmpty) work.release,
-                      if (work.rateCount > 0) '★ ${work.rateAverage}',
-                    ].join(' · '),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+            bottomNavigationBar: BottomNavigationBar(
+              currentIndex: tabIndex,
+              onTap: (changedIndex) {
+                if (changedIndex == tabIndex) return;
+                controller.change(changedIndex);
+                final toTheTab =
+                    HomeScreenTab.values[changedIndex.clamp(0, tailOfTheTab)];
+                Get.offAll(
+                  () => _screens(toTheTab),
+                  binding: _bindings(toTheTab),
+                  id: DefaultValues.shellNavigatorId,
                 );
               },
+              type: BottomNavigationBarType.fixed,
+              items: [
+                BottomNavigationBarItem(icon: Icon(Icons.home), label: '发现'),
+                BottomNavigationBarItem(icon: Icon(Icons.search), label: '搜索'),
+                BottomNavigationBarItem(icon: Icon(Icons.person), label: '我的'),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.settings),
+                  label: '设置',
+                ),
+              ],
             ),
-          ),
-        );
-      }),
+          );
+        }),
+      ),
     );
   }
 }
-
+/*
 class _ErrorView extends StatelessWidget {
   const _ErrorView({required this.message, required this.onRetry});
 
@@ -110,3 +153,4 @@ class _ErrorView extends StatelessWidget {
     );
   }
 }
+*/

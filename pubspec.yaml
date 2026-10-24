@@ -41,6 +41,10 @@ dependencies:
   just_audio_media_kit:
   media_kit_libs_linux:
   media_kit_libs_windows_audio:
+  responsive_builder:
+  aspect_driven_grid:
+    git:
+      url: https://github.com/cmachsocket/aspect_driven_grid
 dev_dependencies:
   flutter_test:
     sdk: flutter
