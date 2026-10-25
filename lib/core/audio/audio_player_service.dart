@@ -98,11 +98,10 @@ class AudioPlayerService extends GetxController {
   }
 
   /// 播放 / 暂停切换。
-  Future<void> togglePlay() => _guard(() async {
-    if (_player.playing) {
-      await _player.pause();
-      return;
-    }
+  Future<void> togglePlay() => _player.playing ? pause() : play();
+
+  /// 播放。播放完成的曲目重新从头开始。
+  Future<void> play() => _guard(() async {
     if (snapshot.value.processingState == ProcessingState.completed) {
       await _player.seek(Duration.zero, index: 0);
     }
