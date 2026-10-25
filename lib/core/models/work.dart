@@ -59,8 +59,11 @@ class Tag {
   final int upvote;
   final int downvote;
 
-  /// 取指定语言的译名，缺失时回退到原名。
-  String label(String locale) => i18n[locale] ?? name;
+  /// 取指定语言的译名，缺失或为空时回退到原名。
+  String label(String locale) {
+    final translated = i18n[locale];
+    return translated == null || translated.isEmpty ? name : translated;
+  }
 
   factory Tag.fromJson(Map<String, dynamic> json) {
     final rawI18n = Json.map(json['i18n']);
@@ -109,13 +112,19 @@ class Circle {
 
 /// 声优 / 演绎者。
 class VoiceActor {
-  const VoiceActor({required this.id, required this.name});
+  const VoiceActor({required this.id, required this.name, this.count = 0});
 
   final String id;
   final String name;
 
-  factory VoiceActor.fromJson(Map<String, dynamic> json) =>
-      VoiceActor(id: Json.string(json['id']), name: Json.string(json['name']));
+  /// 关联作品数量。
+  final int count;
+
+  factory VoiceActor.fromJson(Map<String, dynamic> json) => VoiceActor(
+    id: Json.string(json['id']),
+    name: Json.string(json['name']),
+    count: Json.integer(json['count']),
+  );
 }
 
 /// 同一作品的其它语言版本。
