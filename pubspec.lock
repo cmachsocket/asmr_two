@@ -82,6 +82,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.19.1"
+  context_app_bar:
+    dependency: "direct main"
+    description:
+      name: context_app_bar
+      sha256: "6ae9913fe1ce07abf5a8ac3aad6587b330bde95704bdf93c79bae90bb455c5b6"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.2"
   crypto:
     dependency: transitive
     description:
@@ -354,7 +362,7 @@ packages:
     source: hosted
     version: "1.0.9"
   meta:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: meta
       sha256: "307249ce4ff29d58a18e97f6345f539382eb9c9c29ecda628900f31de0443dd9"

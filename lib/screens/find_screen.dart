@@ -2,13 +2,14 @@ import "package:flutter/material.dart";
 import "package:get/get.dart";
 
 import "../controller/find_controller.dart";
+import '../widgets/asmr_body.dart';
 
-class FindScreen extends StatelessWidget {
+class FindScreen extends GetView<DiscoverController> {
   const FindScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(body: Center(child: Text("Find Screen")));
+    return ASMRBody(works: controller.works);
   }
 }
 

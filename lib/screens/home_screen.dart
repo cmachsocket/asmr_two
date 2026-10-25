@@ -1,3 +1,4 @@
+import 'package:context_app_bar/context_app_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:responsive_builder/responsive_builder.dart';
@@ -95,8 +96,15 @@ class HomeScreen extends GetView<HomeController> {
           final tailOfTheTab = maxPageIndex - 1;
           final tabIndex = controller.index.value.clamp(0, tailOfTheTab);
           return Scaffold(
-            appBar: AppBar(title: const Text('ASMR One')),
-
+            appBar: ContextAppBar(
+              appbarSelector: controller.appbarSelector,
+              children: [
+                AppBar(title: const Text("发现"), key: const ValueKey("发现")),
+                AppBar(title: const Text("搜索"), key: const ValueKey("搜索")),
+                AppBar(title: const Text("我的"), key: const ValueKey("我的")),
+                AppBar(title: const Text("设置"), key: const ValueKey("设置")),
+              ],
+            ),
             body: _responsiveBody(HomeScreenTab.values[tabIndex]),
 
             bottomNavigationBar: BottomNavigationBar(
