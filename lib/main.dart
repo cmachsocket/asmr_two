@@ -8,6 +8,7 @@ import 'core/api/asmr_api.dart';
 import 'core/audio/audio_player_service.dart';
 import 'core/storage/session_store.dart';
 import 'state/player_controller.dart';
+import 'state/subtitle_controller.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,6 +29,7 @@ Future<void> main() async {
     permanent: true,
   );
   Get.put<PlayerController>(PlayerController(), permanent: true);
+  Get.put<SubtitleController>(SubtitleController(), permanent: true);
 
   runApp(const AsmrApp());
 }

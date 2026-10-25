@@ -33,6 +33,12 @@ class PlaybackItem {
   /// 是否有可用的时长信息。
   bool get hasDuration => track.hasDuration;
 
+  /// 同目录同名的字幕节点，没有字幕时为空。
+  TrackNode? get subtitle => track.subtitle;
+
+  /// 是否有可加载的字幕。
+  bool get hasSubtitle => track.hasSubtitle;
+
   /// 时长文案，形如 `12:34`；时长未知时为空串。
   String formatDuration() {
     if (!hasDuration) return '';

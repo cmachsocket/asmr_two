@@ -92,6 +92,45 @@ class ApiClient {
     bool auth = true,
   }) => _send('DELETE', path, body: body, query: query, auth: auth);
 
+  /// 拉取二进制内容（字幕、台本等）。
+  ///
+  /// [path] 可以是接口路径，也可以是字幕节点给出的 CDN 绝对地址。
+  Future<List<int>> getBytes(String path) async {
+    Object? lastError;
+    final startIndex = pinnedHostIndex ?? _hostIndex;
+
+    for (var attempt = 0; attempt < 3; attempt++) {
+      final index = (startIndex + attempt) % ApiHosts.all.length;
+      _hostIndex = index;
+      final uri = Uri.tryParse(path);
+      final url = uri != null && uri.hasScheme
+          ? path
+          : '${ApiHosts.all[index]}$path';
+
+      try {
+        final response = await _dio.get<List<int>>(
+          url,
+          options: Options(
+            headers: _headers(false),
+            responseType: ResponseType.bytes,
+          ),
+        );
+        final code = response.statusCode ?? 0;
+        if (code >= 200 && code < 300) {
+          return response.data ?? const <int>[];
+        }
+        throw ApiException('请求失败（HTTP $code）', statusCode: code);
+      } on DioException catch (error) {
+        lastError = error;
+        if (_isRetryable(error) && attempt < 2) {
+          continue; // 换下一条线路
+        }
+        throw _toApiException(error);
+      }
+    }
+    throw ApiException('网络请求失败，请检查网络连接后再试。', rawError: lastError?.toString());
+  }
+
   /// 发送请求，失败时按顺序切换线路重试。
   Future<dynamic> _send(
     String method,

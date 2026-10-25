@@ -6,6 +6,9 @@ import '../core/audio/audio_player_service.dart';
 import '../core/audio/playback_item.dart';
 import '../core/audio/playback_snapshot.dart';
 
+/// 播放页中间区域的两种展示形态。
+enum PlayerPage { cover, subtitle }
+
 /// 播放页与迷你播放器的 UI 状态。
 ///
 /// 只镜像 [AudioPlayerService.snapshot] 并转发命令，
@@ -43,6 +46,9 @@ class PlayerController extends GetxController {
   /// 最近一次播放错误。
   final RxnString error = RxnString();
 
+  /// 播放页当前展示封面还是字幕。
+  final Rx<PlayerPage> page = PlayerPage.cover.obs;
+
   Worker? _snapshotWorker;
 
   @override
@@ -77,6 +83,14 @@ class PlayerController extends GetxController {
   /// 跳到指定位置。
   void seek(Duration position) => unawaited(_audio.seek(position));
 
+  /// 切换封面 / 字幕。
+  void switchPage() {
+    page.value = switch (page.value) {
+      PlayerPage.cover => PlayerPage.subtitle,
+      PlayerPage.subtitle => PlayerPage.cover,
+    };
+  }
+
   /// 切换整队列循环。
   void toggleRepeatAll() => unawaited(_audio.setRepeatAll(!repeatAll.value));
 
@@ -87,12 +101,20 @@ class PlayerController extends GetxController {
     isPlaying.value = snapshot.isPlaying;
     isBuffering.value = snapshot.isBuffering;
     position.value = snapshot.position;
-    duration.value = snapshot.duration;
+    duration.value = snapshot.duration > Duration.zero
+        ? snapshot.duration
+        : _fallbackDuration(snapshot.current);
     buffered.value = snapshot.bufferedPosition;
     current.value = snapshot.current;
     queue.assignAll(snapshot.queue);
     currentIndex.value = snapshot.currentIndex;
     repeatAll.value = snapshot.repeatAll;
     error.value = snapshot.error;
+  }
+
+  /// 播放器还没读出时长时，用曲目元数据里的秒数先顶上。
+  static Duration _fallbackDuration(PlaybackItem? item) {
+    if (item == null || !item.hasDuration) return Duration.zero;
+    return Duration(seconds: item.duration.round());
   }
 }

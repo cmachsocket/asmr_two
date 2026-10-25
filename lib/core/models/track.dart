@@ -50,6 +50,9 @@ class TrackNode {
 
   bool get isAudio => type == 'audio';
 
+  /// 是否为文本资源（字幕 / 台本）。
+  bool get isText => type == 'text';
+
   /// 是否是可以播放的音频节点。
   bool get isPlayable => isAudio && (hash ?? '').isNotEmpty;
 
@@ -88,12 +91,19 @@ class TrackNode {
 
 /// 展平后的音频条目，供播放队列使用。
 class AudioTrack {
-  const AudioTrack({required this.node, this.folderPath = const []});
+  const AudioTrack({
+    required this.node,
+    this.folderPath = const [],
+    this.subtitle,
+  });
 
   final TrackNode node;
 
   /// 所在目录的层级路径。
   final List<String> folderPath;
+
+  /// 同目录同名的字幕节点。
+  final TrackNode? subtitle;
 
   String get title => node.title;
 
@@ -102,6 +112,9 @@ class AudioTrack {
   double get duration => node.duration ?? 0;
 
   bool get hasDuration => duration > 0;
+
+  /// 是否有可加载的字幕。
+  bool get hasSubtitle => subtitle != null;
 
   /// 目录层级展示文案，例如 `特典 / 闹钟音频`。
   String get folderLabel => folderPath.join(' / ');

@@ -4,6 +4,7 @@ import '../models/review.dart';
 import '../models/track.dart';
 import '../models/user.dart';
 import '../models/work.dart';
+import '../subtitle/subtitle_parser.dart';
 import 'api_client.dart';
 import 'api_endpoints.dart';
 import 'api_exception.dart';
@@ -506,6 +507,25 @@ class AsmrApi {
     if (hash == null || hash.isEmpty) return null;
     if (!client.hasToken) return null;
     return downloadUrl(hash);
+  }
+
+  /// 解析字幕节点的内容地址。
+  ///
+  /// 字幕通常直接给出 `mediaStreamUrl`，缺失时回退到按 hash 拼出的流地址。
+  String? resolveSubtitleUrl(TrackNode node) {
+    if ((node.streamUrl ?? '').isNotEmpty) return node.streamUrl;
+    if ((node.downloadUrl ?? '').isNotEmpty) return node.downloadUrl;
+    final hash = node.hash;
+    if (hash == null || hash.isEmpty) return null;
+    return '${client.baseUrl}${ApiEndpoints.mediaStream(hash)}';
+  }
+
+  /// 拉取并解码字幕原文，解析交给 [SubtitleParser]。
+  Future<String> fetchSubtitleText(TrackNode node) async {
+    final url = resolveSubtitleUrl(node);
+    if (url == null) throw ApiException('字幕内容不可用。');
+    final bytes = await client.getBytes(url);
+    return SubtitleParser.decodeBytes(bytes);
   }
 
   /// 官网上的作品页面地址。
