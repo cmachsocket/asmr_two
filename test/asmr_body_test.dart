@@ -1,31 +1,12 @@
-import 'dart:ui' as ui;
-
 import 'package:asmr_two/core/models/work.dart';
 import 'package:asmr_two/widgets/asmr_body.dart';
 import 'package:asmr_two/widgets/asmr_card.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-const String _coverUrl = 'https://cmach.ccwu.cc/4.png';
+import 'support/mock_image.dart';
 
-/// 用 1x1 图片占住封面缓存，避免 widget 测试发起真实网络请求。
-Future<void> _mockCoverImage(WidgetTester tester, String url) async {
-  final image = await tester.runAsync(() async {
-    final recorder = ui.PictureRecorder();
-    ui.Canvas(recorder).drawRect(
-      const ui.Rect.fromLTWH(0, 0, 1, 1),
-      ui.Paint()..color = const ui.Color(0xFF000000),
-    );
-    return recorder.endRecording().toImage(1, 1);
-  });
-  PaintingBinding.instance.imageCache.putIfAbsent(
-    NetworkImage(url),
-    () => OneFrameImageStreamCompleter(
-      SynchronousFuture<ImageInfo>(ImageInfo(image: image!, scale: 1)),
-    ),
-  );
-}
+const String _coverUrl = 'https://cmach.ccwu.cc/4.png';
 
 List<Work> _works(int count) => [
   for (var i = 0; i < count; i++)
@@ -51,7 +32,7 @@ Future<int> _columnsAt(WidgetTester tester, Size size) async {
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
 
-  await _mockCoverImage(tester, _coverUrl);
+  await mockCoverImage(tester, _coverUrl);
   await tester.pumpWidget(
     MaterialApp(
       home: Scaffold(body: ASMRBody(works: _works(8))),
@@ -86,7 +67,7 @@ void main() {
   });
 
   testWidgets('作品标题与时长按 Work 渲染', (tester) async {
-    await _mockCoverImage(tester, _coverUrl);
+    await mockCoverImage(tester, _coverUrl);
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(

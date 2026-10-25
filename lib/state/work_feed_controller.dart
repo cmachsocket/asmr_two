@@ -11,7 +11,12 @@ class WorkFeedController extends GetxController {
   final AsmrApi api;
 
   /// 已加载的作品。
-  final RxList<Work> works = <Work>[].obs;
+  final RxList<Work> _works = <Work>[].obs;
+
+  /// 页面展示的作品。
+  ///
+  /// 读取列表会注册 Obx 监听，直接把 [RxList] 传给界面不会触发刷新。
+  List<Work> get works => _works.toList();
 
   /// 是否正在加载。
   final RxBool loading = false.obs;
@@ -21,6 +26,9 @@ class WorkFeedController extends GetxController {
 
   /// 当前页码。
   final RxInt page = 1.obs;
+
+  /// 总页数。
+  final RxInt pageCount = 1.obs;
 
   /// 是否还有更多内容。
   final RxBool hasMore = true.obs;
@@ -38,7 +46,7 @@ class WorkFeedController extends GetxController {
   Future<void> reload() async {
     page.value = 1;
     hasMore.value = true;
-    works.clear();
+    _works.clear();
     await load();
   }
 
@@ -46,6 +54,14 @@ class WorkFeedController extends GetxController {
   Future<void> loadMore() async {
     if (loading.value || !hasMore.value) return;
     await load(targetPage: page.value + 1, append: true);
+  }
+
+  /// 跳到指定页，页码从 1 开始。
+  ///
+  /// 该页内容替换当前列表，不追加。
+  Future<void> gotoPage(int targetPage) async {
+    if (targetPage < 1) return;
+    await load(targetPage: targetPage);
   }
 
   /// 按关键字搜索。
@@ -64,14 +80,17 @@ class WorkFeedController extends GetxController {
           ? await api.fetchWorks(page: targetPage ?? 1)
           : await api.searchWorks(keyword.value, page: targetPage ?? 1);
       if (append) {
-        works.addAll(result.works);
+        _works.addAll(result.works);
       } else {
-        works.assignAll(result.works);
+        _works.assignAll(result.works);
       }
       page.value = result.pagination.page;
+      pageCount.value = result.pagination.maxPage;
       hasMore.value = result.pagination.hasMore;
     } on ApiException catch (e) {
       error.value = e.message;
+    } catch (_) {
+      error.value = '加载失败，请稍后重试。';
     } finally {
       loading.value = false;
     }

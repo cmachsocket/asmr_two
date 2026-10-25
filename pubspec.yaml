@@ -44,6 +44,7 @@ dependencies:
   media_kit_libs_windows_audio:
   responsive_builder:
   context_app_bar:
+  number_paginator:
   aspect_driven_grid:
     git:
       url: https://github.com/cmachsocket/aspect_driven_grid
