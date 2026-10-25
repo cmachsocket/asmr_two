@@ -1,8 +1,7 @@
-gradle-wrapper.jar
+# Gradle wrapper (gradlew, gradlew.bat, gradle-wrapper.jar) is committed
+# so CI can build without regenerating the project.
 /.gradle
 /captures/
-/gradlew
-/gradlew.bat
 /local.properties
 GeneratedPluginRegistrant.java
 .cxx/
