@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:asmr_two/core/api/asmr_api.dart';
+import 'package:asmr_two/controller/search_controller.dart';
 import 'package:asmr_two/screens/find_screen.dart';
+import 'package:asmr_two/screens/search_screen.dart';
 import 'package:asmr_two/state/work_feed_controller.dart';
 import 'package:asmr_two/widgets/asmr_card.dart';
 import 'package:asmr_two/widgets/floating_paginator.dart';
@@ -47,6 +49,11 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    // 收尾时把整棵树拆掉,路由的销毁就不会拖到下一个用例
+    addTearDown(() async {
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+    });
   }
 
   testWidgets('发现页渲染接口返回的作品且不触发 Obx 误用', (tester) async {
@@ -54,6 +61,46 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.byType(AsmrCard), findsWidgets);
+  });
+
+  testWidgets('点作品标签会压入搜索页并按该标签搜索', (tester) async {
+    await pumpFind(tester);
+
+    await tester.tap(find.widgetWithText(ActionChip, 'ASMR').first);
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.byType(SearchPage), findsOneWidget);
+    expect(
+      Uri.decodeComponent(adapter.requests.last.path),
+      contains(r'$tag:ASMR$'),
+    );
+    // controller 的 tag 由搜索内容决定
+    expect(Get.isRegistered<SearchScreenController>(tag: 'tag:ASMR'), isTrue);
+    final controller = Get.find<SearchScreenController>(tag: 'tag:ASMR');
+    expect(controller.keyword.value, r'$tag:ASMR$');
+
+    // 换一个标签就是另一个 controller
+    await tester.tap(find.widgetWithText(ActionChip, '耳语').first);
+    await tester.pumpAndSettle();
+
+    final other = SearchEntry(tags: ['耳语']).key;
+    expect(Get.isRegistered<SearchScreenController>(tag: other), isTrue);
+    expect(
+      Get.find<SearchScreenController>(tag: other),
+      isNot(same(controller)),
+    );
+  });
+
+  testWidgets('同一个标签不会压出两个搜索页', (tester) async {
+    await pumpFind(tester);
+
+    await tester.tap(find.widgetWithText(ActionChip, 'ASMR').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ActionChip, 'ASMR').first);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(SearchPage), findsOneWidget);
   });
 
   testWidgets('发现页浮着分页按钮', (tester) async {

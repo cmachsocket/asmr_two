@@ -7,6 +7,7 @@ import '../state/work_feed_controller.dart';
 import '../widgets/asmr_body.dart';
 import '../widgets/floating_paginator.dart';
 import '../widgets/message_view.dart';
+import 'search_screen.dart';
 
 /// 发现页，按最新排序浏览作品。
 class FindScreen extends GetView<WorkFeedController> {
@@ -43,7 +44,7 @@ class FindScreen extends GetView<WorkFeedController> {
           ? const Center(child: CircularProgressIndicator())
           : const SizedBox.shrink();
     }
-    return ASMRBody(works: works);
+    return ASMRBody(works: works, onTagTap: openTagSearch);
   }
 }
 

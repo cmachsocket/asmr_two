@@ -9,9 +9,12 @@ import "asmr_card.dart";
 /// 列数由容器宽高比派生：1:1 时 [baseColumns] 列，最少 [minColumns] 列。
 /// 卡片高度随标签行数变化，故用瀑布流版避免内容溢出。
 class ASMRBody extends StatelessWidget {
-  const ASMRBody({super.key, required this.works});
+  const ASMRBody({super.key, required this.works, this.onTagTap});
 
   final List<Work> works;
+
+  /// 点标签时的回调，为空时标签不可点。
+  final void Function(String tag)? onTagTap;
 
   /// 1:1 容器下的列数。
   static const int baseColumns = 4;
@@ -38,6 +41,7 @@ class ASMRBody extends StatelessWidget {
         return AsmrCard(
           title: work.title,
           tags: [for (final tag in work.tags) tag.name],
+          onTagTap: onTagTap,
           imageUrl: work.mainCoverUrl.isNotEmpty
               ? work.mainCoverUrl
               : work.thumbnailCoverUrl,

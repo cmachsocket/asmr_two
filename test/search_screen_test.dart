@@ -51,6 +51,11 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    // 收尾时把整棵树拆掉,路由的销毁就不会拖到下一个用例
+    addTearDown(() async {
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+    });
   }
 
   /// 在搜索栏里提交关键字。
@@ -59,6 +64,24 @@ void main() {
     await tester.testTextInput.receiveAction(TextInputAction.search);
     await tester.pumpAndSettle();
   }
+
+  test('搜索内容的键由内容唯一决定', () {
+    // 内容里的分隔符不会造成歧义
+    expect(
+      const SearchEntry(text: 'a', tags: ['b']).key,
+      isNot(const SearchEntry(text: 'a|tag:b').key),
+    );
+    // 同样的内容得到同样的键
+    expect(
+      const SearchEntry(tags: ['ASMR']).key,
+      const SearchEntry(tags: ['ASMR']).key,
+    );
+    // 不同内容得到不同的键
+    expect(
+      const SearchEntry(tags: ['ASMR']).key,
+      isNot(const SearchEntry(tags: ['耳语']).key),
+    );
+  });
 
   testWidgets('没有关键字时提示输入关键字或选择筛选条件', (tester) async {
     await pumpSearch(tester);

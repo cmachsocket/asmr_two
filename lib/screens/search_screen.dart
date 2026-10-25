@@ -10,14 +10,63 @@ import '../widgets/search_filter_sheet.dart';
 import '../widgets/search_sort_sheet.dart';
 
 /// 搜索页，按关键字、排序与筛选条件找作品。
-class SearchScreen extends GetView<SearchScreenController> {
+class SearchScreen extends StatelessWidget {
   const SearchScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const SearchView();
+  }
+}
+
+/// 压在导航栈上的搜索页。
+class SearchPage extends StatelessWidget {
+  const SearchPage({super.key, required this.entry});
+
+  /// 打开时的搜索内容。
+  final SearchEntry entry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('搜索')),
+      body: SearchView(entry: entry),
+    );
+  }
+}
+
+/// 按标签打开搜索页，压在导航栈上。
+///
+/// controller 的 tag 由搜索内容决定，不同标签各用各的状态。
+/// 路由用 entry 标记，搜同样的内容时不重复压页面。
+void openTagSearch(String tag) {
+  final entry = SearchEntry(tags: [tag]);
+  final current = Get.arguments;
+  if (current is SearchEntry && current.key == entry.key) return;
+  Get.to<void>(
+    () => SearchPage(entry: entry),
+    binding: SearchScreenBinding(entry: entry),
+    arguments: entry,
+    preventDuplicates: false,
+  );
+}
+
+/// 搜索页内容：搜索栏与结果。
+class SearchView extends GetView<SearchScreenController> {
+  const SearchView({super.key, this.entry});
+
+  /// 打开时的搜索内容，决定用哪个 controller。
+  final SearchEntry? entry;
+
+  @override
+  SearchScreenController get controller =>
+      Get.find<SearchScreenController>(tag: entry?.key);
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        const _SearchBar(),
+        _SearchBar(controller: controller),
         Expanded(child: Obx(() => _results())),
       ],
     );
@@ -40,7 +89,9 @@ class SearchScreen extends GetView<SearchScreenController> {
     }
     return Stack(
       children: [
-        Positioned.fill(child: ASMRBody(works: works)),
+        Positioned.fill(
+          child: ASMRBody(works: works, onTagTap: openTagSearch),
+        ),
         Align(
           alignment: Alignment.bottomRight,
           child: FloatingPaginator(
@@ -55,8 +106,10 @@ class SearchScreen extends GetView<SearchScreenController> {
 }
 
 /// 搜索栏：关键字输入与排序、筛选入口。
-class _SearchBar extends GetView<SearchScreenController> {
-  const _SearchBar();
+class _SearchBar extends StatelessWidget {
+  const _SearchBar({required this.controller});
+
+  final SearchScreenController controller;
 
   @override
   Widget build(BuildContext context) {
@@ -125,10 +178,17 @@ class _SearchBar extends GetView<SearchScreenController> {
 }
 
 class SearchScreenBinding extends Bindings {
+  SearchScreenBinding({this.entry});
+
+  /// 打开时的搜索内容，决定 controller 的 tag。
+  final SearchEntry? entry;
+
   @override
   void dependencies() {
     Get.lazyPut<SearchScreenController>(
-      () => SearchScreenController(Get.find<AsmrApi>()),
+      () => SearchScreenController(Get.find<AsmrApi>(), entry: entry),
+      tag: entry?.key,
+      fenix: true,
     );
   }
 }

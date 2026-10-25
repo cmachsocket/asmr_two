@@ -9,12 +9,16 @@ class AsmrCard extends StatelessWidget {
     required this.tags,
     required this.imageUrl,
     required this.duration,
+    this.onTagTap,
   });
 
   final String title;
   final List<String> tags;
   final String imageUrl;
   final String duration;
+
+  /// 点标签时的回调，为空时标签不可点。
+  final void Function(String tag)? onTagTap;
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +46,19 @@ class AsmrCard extends StatelessWidget {
                 Text(duration, style: textTheme.bodySmall),
                 if (tags.isNotEmpty)
                   Wrap(
-                    children: [for (final tag in tags) Chip(label: Text(tag))],
+                    children: [
+                      for (final tag in tags)
+                        onTagTap == null
+                            ? Chip(
+                                label: Text(tag),
+                                shape: const StadiumBorder(),
+                              )
+                            : ActionChip(
+                                label: Text(tag),
+                                shape: const StadiumBorder(),
+                                onPressed: () => onTagTap!(tag),
+                              ),
+                    ],
                   ),
               ],
             ),

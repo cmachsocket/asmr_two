@@ -16,12 +16,50 @@ enum FilterCategory {
   final String label;
 }
 
+/// 搜索页的初始内容。
+///
+/// 同一个内容对应同一个 [key]，用作 controller 的 tag，
+/// 这样不同搜索内容各用各的状态。
+class SearchEntry {
+  const SearchEntry({
+    this.text = '',
+    this.tags = const [],
+    this.voiceActors = const [],
+  });
+
+  /// 关键字。
+  final String text;
+
+  /// 标签名。
+  final List<String> tags;
+
+  /// 声优名。
+  final List<String> voiceActors;
+
+  /// 由搜索内容决定的键。
+  ///
+  /// 各部分分别编码，内容里的分隔符不会造成歧义，
+  /// 所以不同内容一定得到不同的键。
+  String get key {
+    final parts = <String>[
+      if (text.trim().isNotEmpty) 'text:${Uri.encodeComponent(text.trim())}',
+      for (final tag in tags) 'tag:${Uri.encodeComponent(tag)}',
+      for (final voiceActor in voiceActors)
+        'va:${Uri.encodeComponent(voiceActor)}',
+    ];
+    return parts.isEmpty ? 'empty' : parts.join('|');
+  }
+}
+
 /// 搜索页控制器。
 ///
 /// 关键字与筛选条件编码成搜索关键字，
 /// 服务端不接收独立的筛选参数。
 class SearchScreenController extends WorkFeedController {
-  SearchScreenController(super.api) : super(autoLoad: false);
+  SearchScreenController(super.api, {this.entry}) : super(autoLoad: false);
+
+  /// 打开页面时的初始搜索内容。
+  final SearchEntry? entry;
 
   /// 标签译名使用的语言。
   static const String tagLocale = 'zh-cn';
@@ -52,6 +90,17 @@ class SearchScreenController extends WorkFeedController {
 
   /// 筛选面板里的关键字。
   final RxString filterKeyword = ''.obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    final entry = this.entry;
+    if (entry == null) return;
+    text = entry.text;
+    selectedTags.addAll(entry.tags);
+    selectedVoiceActors.addAll(entry.voiceActors);
+    apply();
+  }
 
   /// 搜索页只走搜索接口，不浏览全站作品。
   @override
