@@ -145,9 +145,40 @@ Dart 方法：`fetchWorkInfo`
 | `folder` | 目录，含 `children` |
 | `audio` | 音频，可播放 |
 | `image` | 图片 |
-| `text` | 文本 |
+| `text` | 文本，可能是字幕或台本 |
+
+标题带字幕扩展名的 `text` 节点是字幕，详见下文「字幕」一节。
 
 Dart 方法：`fetchTracks`
+
+### 字幕
+
+字幕没有独立接口，而是曲目树里的 `text` 节点，与同目录同名音频成对出现
+（音频文件名加字幕扩展名），`duration` 与音频对齐。
+
+| 扩展名 | 格式 | 说明 |
+| --- | --- | --- |
+| `.vtt` | WebVTT | `WEBVTT` 头，cue 可带序号，时间轴为 `HH:MM:SS.mmm --> HH:MM:SS.mmm` |
+| `.lrc` | LRC | `[mm:ss.xx]` 行时间戳，可带 `[ti:...]` 标签，存在只有时间戳的空行；编码不固定 |
+| `.txt` | 纯文本或 WebVTT | 台本，两种形态都存在，需按内容嗅探 |
+
+节点字段：
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `title` | string | 文件名，扩展名用于判断格式 |
+| `hash` | string | 内容位置，形如 `1673907/1963962` |
+| `duration` | number | 字幕轨时长（秒） |
+| `size` | int | 字节数 |
+| `mediaStreamUrl` | string | 字幕内容地址，通常为 `/api/media/stream/{hash}` |
+| `mediaDownloadUrl` | string | CDN 直链 |
+
+内容用 `GET {mediaStreamUrl}`（即 `GET /api/media/stream/{hash}`）获取，带 `Referer`。
+实测字幕/文本流不带 `token` 也返回 `200`，`mediaDownloadUrl` 可直接下载。
+
+编码不保证 UTF-8：`.lrc` 与部分 `.txt` 实测为 GBK + CRLF，UTF-8 解码失败时回退 `GB18030`。
+
+示例见 [examples/subtitle.lrc](examples/subtitle.lrc)。
 
 ### 搜索
 
@@ -383,7 +414,7 @@ Dart 方法：`fetchPopular`、`fetchRecommended`、`fetchSimilarWorks`、`repor
 | 接口 | 说明 |
 | --- | --- |
 | `GET /api/cover/{id}.jpg?type=main\|sam\|240x240` | 封面，`type` 只支持这三种 |
-| `GET /api/media/stream/{hash}?token={jwt}` | 播放 |
+| `GET /api/media/stream/{hash}?token={jwt}` | 播放；`text` 节点返回字幕/台本原文件 |
 | `GET /api/media/stream-low/{hash}?token={jwt}` | 低码率播放，需要登录，官网未使用 |
 | `GET /api/media/download/{hash}?token={jwt}` | 下载 |
 
