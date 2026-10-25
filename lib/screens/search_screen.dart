@@ -8,6 +8,7 @@ import '../widgets/floating_paginator.dart';
 import '../widgets/message_view.dart';
 import '../widgets/search_filter_sheet.dart';
 import '../widgets/search_sort_sheet.dart';
+import 'detail_screen.dart';
 
 /// 搜索页，按关键字、排序与筛选条件找作品。
 class SearchScreen extends StatelessWidget {
@@ -90,7 +91,11 @@ class SearchView extends GetView<SearchScreenController> {
     return Stack(
       children: [
         Positioned.fill(
-          child: ASMRBody(works: works, onTagTap: openTagSearch),
+          child: ASMRBody(
+            works: works,
+            onTagTap: openTagSearch,
+            onWorkTap: openDetail,
+          ),
         ),
         Align(
           alignment: Alignment.bottomRight,

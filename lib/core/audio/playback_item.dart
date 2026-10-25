@@ -33,6 +33,19 @@ class PlaybackItem {
   /// 是否有可用的时长信息。
   bool get hasDuration => track.hasDuration;
 
+  /// 时长文案，形如 `12:34`；时长未知时为空串。
+  String formatDuration() {
+    if (!hasDuration) return '';
+    final total = duration.round();
+    final hours = total ~/ 3600;
+    final minutes = (total % 3600) ~/ 60;
+    final rest = (total % 60).toString().padLeft(2, '0');
+    if (hours > 0) {
+      return '$hours:${minutes.toString().padLeft(2, '0')}:$rest';
+    }
+    return '$minutes:$rest';
+  }
+
   /// 曲目节点，解析播放地址时使用。
   TrackNode get node => track.node;
 }

@@ -10,6 +10,7 @@ class AsmrCard extends StatelessWidget {
     required this.imageUrl,
     required this.duration,
     this.onTagTap,
+    this.onTap,
   });
 
   final String title;
@@ -20,50 +21,56 @@ class AsmrCard extends StatelessWidget {
   /// 点标签时的回调，为空时标签不可点。
   final void Function(String tag)? onTagTap;
 
+  /// 点卡片时的回调，为空时卡片不可点。
+  final VoidCallback? onTap;
+
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
     return Card(
       clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AspectRatio(
-            aspectRatio: DefaultValues.cardImageAspectRatio,
-            child: Image.network(
-              imageUrl,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) =>
-                  ColoredBox(color: colorScheme.surfaceContainerHighest),
+      child: InkWell(
+        onTap: onTap,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AspectRatio(
+              aspectRatio: DefaultValues.cardImageAspectRatio,
+              child: Image.network(
+                imageUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) =>
+                    ColoredBox(color: colorScheme.surfaceContainerHighest),
+              ),
             ),
-          ),
-          ListTile(
-            title: Text(title, style: textTheme.titleMedium),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(duration, style: textTheme.bodySmall),
-                if (tags.isNotEmpty)
-                  Wrap(
-                    children: [
-                      for (final tag in tags)
-                        onTagTap == null
-                            ? Chip(
-                                label: Text(tag),
-                                shape: const StadiumBorder(),
-                              )
-                            : ActionChip(
-                                label: Text(tag),
-                                shape: const StadiumBorder(),
-                                onPressed: () => onTagTap!(tag),
-                              ),
-                    ],
-                  ),
-              ],
+            ListTile(
+              title: Text(title, style: textTheme.titleMedium),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(duration, style: textTheme.bodySmall),
+                  if (tags.isNotEmpty)
+                    Wrap(
+                      children: [
+                        for (final tag in tags)
+                          onTagTap == null
+                              ? Chip(
+                                  label: Text(tag),
+                                  shape: const StadiumBorder(),
+                                )
+                              : ActionChip(
+                                  label: Text(tag),
+                                  shape: const StadiumBorder(),
+                                  onPressed: () => onTagTap!(tag),
+                                ),
+                      ],
+                    ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

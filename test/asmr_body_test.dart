@@ -98,4 +98,22 @@ void main() {
     expect(find.text('标题'), findsOneWidget);
     expect(find.text('12:34'), findsOneWidget);
   });
+
+  testWidgets('点卡片把作品 id 交给回调', (tester) async {
+    await mockCoverImage(tester, _coverUrl);
+    final tapped = <int>[];
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ASMRBody(works: _works(2), onWorkTap: tapped.add),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.byType(AsmrCard).first);
+    await tester.pump();
+
+    expect(tapped, [0]);
+  });
 }

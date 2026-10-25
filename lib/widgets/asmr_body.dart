@@ -9,12 +9,20 @@ import "asmr_card.dart";
 /// 列数由容器宽高比派生：1:1 时 [baseColumns] 列，最少 [minColumns] 列。
 /// 卡片高度随标签行数变化，故用瀑布流版避免内容溢出。
 class ASMRBody extends StatelessWidget {
-  const ASMRBody({super.key, required this.works, this.onTagTap});
+  const ASMRBody({
+    super.key,
+    required this.works,
+    this.onTagTap,
+    this.onWorkTap,
+  });
 
   final List<Work> works;
 
   /// 点标签时的回调，为空时标签不可点。
   final void Function(String tag)? onTagTap;
+
+  /// 点作品时的回调，参数为作品 id；为空时卡片不可点。
+  final void Function(int workId)? onWorkTap;
 
   /// 1:1 容器下的列数。
   static const int baseColumns = 4;
@@ -42,24 +50,13 @@ class ASMRBody extends StatelessWidget {
           title: work.title,
           tags: [for (final tag in work.tags) tag.name],
           onTagTap: onTagTap,
+          onTap: onWorkTap == null ? null : () => onWorkTap!(work.id),
           imageUrl: work.mainCoverUrl.isNotEmpty
               ? work.mainCoverUrl
               : work.thumbnailCoverUrl,
-          duration: _formatDuration(work.duration),
+          duration: work.formatDuration(),
         );
       },
     );
-  }
-
-  /// 秒数转 `时:分:秒` 或 `分:秒`，时长未知时返回空串。
-  static String _formatDuration(int? seconds) {
-    if (seconds == null || seconds <= 0) return '';
-    final hours = seconds ~/ 3600;
-    final minutes = (seconds % 3600) ~/ 60;
-    final rest = (seconds % 60).toString().padLeft(2, '0');
-    if (hours > 0) {
-      return '$hours:${minutes.toString().padLeft(2, '0')}:$rest';
-    }
-    return '$minutes:$rest';
   }
 }

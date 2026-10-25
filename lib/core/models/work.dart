@@ -355,6 +355,19 @@ class Work {
       progress: Json.stringOrNull(json['progress']),
     );
   }
+
+  /// 秒数转 `时:分:秒` 或 `分:秒`，时长未知时返回空串。
+  String formatDuration() {
+    final value = duration;
+    if (value == null || value <= 0) return '';
+    final hours = value ~/ 3600;
+    final minutes = (value % 3600) ~/ 60;
+    final rest = (value % 60).toString().padLeft(2, '0');
+    if (hours > 0) {
+      return '$hours:${minutes.toString().padLeft(2, '0')}:$rest';
+    }
+    return '$minutes:$rest';
+  }
 }
 
 /// 作品列表的分页结果。

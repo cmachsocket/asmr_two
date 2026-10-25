@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 
 import '../core/api/api_exception.dart';
 import '../core/api/asmr_api.dart';
+import '../core/audio/playback_item.dart';
 import '../core/audio/track_plan.dart';
 import '../core/models/work.dart';
 import 'player_controller.dart';
@@ -34,6 +35,9 @@ class WorkDetailController extends GetxController {
 
   /// 曲目加载错误。
   final RxnString tracksError = RxnString();
+
+  /// 当前播放的条目，用于在曲目树里标出正在播放的一行。
+  PlaybackItem? get current => _player.current.value;
 
   @override
   void onInit() {
