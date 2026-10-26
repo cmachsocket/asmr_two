@@ -4,6 +4,7 @@ import 'package:asmr_two/core/default.dart';
 import 'package:asmr_two/core/models/work.dart';
 import 'package:asmr_two/controller/home_controller.dart';
 import 'package:asmr_two/screens/detail_screen.dart';
+import 'package:asmr_two/screens/find_screen.dart';
 import 'package:asmr_two/screens/search_screen.dart';
 import 'package:asmr_two/state/player_controller.dart';
 import 'package:asmr_two/widgets/asmr_body.dart';
@@ -73,8 +74,13 @@ const List<Map<String, dynamic>> _trackJson = [
 ///
 /// 外壳导航器是底部播放器所在的那一层，推进去的页面仍在应用内；
 /// [bottom] 是播放器这类常驻在导航器下方的部件。
-Widget shellApp({required Widget home, Widget? bottom}) {
+Widget shellApp({
+  required Widget home,
+  Widget? bottom,
+  Bindings? initialBinding,
+}) {
   return GetMaterialApp(
+    initialBinding: initialBinding,
     home: Scaffold(
       body: Column(
         children: [
@@ -111,6 +117,7 @@ void main() {
       if (path.startsWith('/api/work/')) return jsonBody(_workJson());
       if (path.startsWith('/api/tracks/')) return jsonBody(_trackJson);
       if (path.startsWith('/api/search')) return jsonBody(worksResponse());
+      if (path == '/api/works') return jsonBody(worksResponse());
       return errorBody(message: 'unexpected $path');
     };
     final (client, fake) = buildClient((options) => handler(options));
@@ -194,7 +201,22 @@ void main() {
   });
 
   testWidgets('点标签会打开该标签的搜索页', (tester) async {
-    await pumpDetail(tester);
+    tester.view.physicalSize = const Size(1000, 2000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await mockCoverImage(tester, mockCoverUrl);
+    await tester.pumpWidget(
+      shellApp(
+        home: const DetailScreen(workId: 1),
+        initialBinding: DetailScreenBinding(1),
+      ),
+    );
+    await tester.pumpAndSettle();
+    addTearDown(() async {
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+    });
 
     await tester.tap(find.widgetWithText(ActionChip, 'ASMR'));
     await tester.pumpAndSettle();
@@ -205,6 +227,33 @@ void main() {
       Uri.decodeComponent(adapter.requests.last.path),
       contains(r'$tag:ASMR$'),
     );
+  });
+
+  testWidgets('标签搜索页推进外壳导航器，底部播放器常驻', (tester) async {
+    tester.view.physicalSize = const Size(1000, 2000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await mockCoverImage(tester, mockCoverUrl);
+    await tester.pumpWidget(
+      shellApp(
+        home: const FindScreen(),
+        bottom: const SizedBox(height: 120, child: BottomPlayer()),
+        initialBinding: FindScreenBinding(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    addTearDown(() async {
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+    });
+
+    await tester.tap(find.widgetWithText(ActionChip, 'ASMR').first);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(SearchPage), findsOneWidget);
+    // 搜索页在外壳导航器里，底部播放器没有被盖掉
+    expect(find.byType(BottomPlayer), findsOneWidget);
   });
 
   testWidgets('作品信息加载失败时给出重试入口', (tester) async {

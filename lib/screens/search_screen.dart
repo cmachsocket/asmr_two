@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../core/api/asmr_api.dart';
+import '../core/default.dart';
 import '../controller/search_controller.dart';
 import '../widgets/asmr_body.dart';
 import '../widgets/floating_paginator.dart';
@@ -16,7 +17,7 @@ class SearchScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const SearchView(onWorkTap: openDetail);
+    return const SearchView();
   }
 }
 
@@ -31,37 +32,35 @@ class SearchPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('搜索')),
-      // 浮层盖住整个应用，详情页也要推到根导航器，否则会被浮层挡住。
-      body: SearchView(entry: entry, onWorkTap: openDetailOnOverlay),
+      body: SearchView(entry: entry),
     );
   }
 }
 
-/// 按标签打开搜索页，压在导航栈上。
+/// 按标签打开搜索页。
 ///
+/// 推进外壳导航器，底部播放器与标签栏常驻；
 /// controller 的 tag 由搜索内容决定，不同标签各用各的状态。
-/// 路由用 entry 标记，搜同样的内容时不重复压页面。
-void openTagSearch(String tag) {
+///
+/// [current] 是当前页面已经在搜的内容，同样的标签不再重复压页面。
+void openTagSearch(String tag, {SearchEntry? current}) {
+  if (current != null && current.tags.contains(tag)) return;
   final entry = SearchEntry(tags: [tag]);
-  final current = Get.arguments;
-  if (current is SearchEntry && current.key == entry.key) return;
   Get.to<void>(
     () => SearchPage(entry: entry),
     binding: SearchScreenBinding(entry: entry),
     arguments: entry,
+    id: DefaultValues.shellNavigatorId,
     preventDuplicates: false,
   );
 }
 
 /// 搜索页内容：搜索栏与结果。
 class SearchView extends GetView<SearchScreenController> {
-  const SearchView({super.key, this.entry, this.onWorkTap});
+  const SearchView({super.key, this.entry});
 
   /// 打开时的搜索内容，决定用哪个 controller。
   final SearchEntry? entry;
-
-  /// 点作品时的回调，默认推到外壳导航器。
-  final void Function(int workId)? onWorkTap;
 
   @override
   SearchScreenController get controller =>
@@ -97,8 +96,8 @@ class SearchView extends GetView<SearchScreenController> {
         Positioned.fill(
           child: ASMRBody(
             works: works,
-            onTagTap: openTagSearch,
-            onWorkTap: onWorkTap ?? openDetail,
+            onTagTap: (tag) => openTagSearch(tag, current: entry),
+            onWorkTap: openDetail,
           ),
         ),
         Align(

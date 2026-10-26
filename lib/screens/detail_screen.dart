@@ -85,21 +85,10 @@ class DetailScreenBinding extends Bindings {
 /// 推到外壳导航器，底部播放器与标签栏常驻；
 /// 外壳的 app bar 让位给详情页自己的 app bar。
 void openDetail(int workId) {
-  _pushDetail(workId, id: DefaultValues.shellNavigatorId);
-}
-
-/// 打开作品详情页，盖在当前整屏浮层上。
-///
-/// 浮层在根导航器上，详情页也得推到根导航器，否则会被浮层挡住。
-void openDetailOnOverlay(int workId) {
-  _pushDetail(workId);
-}
-
-void _pushDetail(int workId, {int? id}) {
   Get.to<void>(
     () => DetailScreen(workId: workId),
     binding: DetailScreenBinding(workId),
-    id: id,
+    id: DefaultValues.shellNavigatorId,
     // 详情页可以逐层打开其它作品，不按路由去重。
     preventDuplicates: false,
   );

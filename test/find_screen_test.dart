@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:asmr_two/core/api/asmr_api.dart';
+import 'package:asmr_two/core/default.dart';
 import 'package:asmr_two/controller/search_controller.dart';
 import 'package:asmr_two/screens/find_screen.dart';
 import 'package:asmr_two/screens/search_screen.dart';
@@ -45,7 +46,14 @@ void main() {
     await tester.pumpWidget(
       GetMaterialApp(
         initialBinding: FindScreenBinding(),
-        home: const FindScreen(),
+        // 外壳导航器：页面推进去以后仍留在外壳里（底部播放器常驻）。
+        home: Scaffold(
+          body: Navigator(
+            key: Get.nestedKey(DefaultValues.shellNavigatorId),
+            onGenerateRoute: (settings) =>
+                GetPageRoute(page: () => const FindScreen()),
+          ),
+        ),
       ),
     );
     await tester.pumpAndSettle();
