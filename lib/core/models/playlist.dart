@@ -114,6 +114,25 @@ class Playlist {
 
   static const _systemPrefix = '__SYS_PLAYLIST_';
 
+  /// 复制一份并替换作品数与收藏状态。
+  ///
+  /// 这两个字段会随作品的加入/移出变化，其余字段保持不变。
+  Playlist copyWith({int? worksCount, bool? exist}) => Playlist(
+    id: id,
+    name: name,
+    description: description,
+    privacy: privacy,
+    locale: locale,
+    userName: userName,
+    worksCount: worksCount ?? this.worksCount,
+    likedCount: likedCount,
+    playbackCount: playbackCount,
+    createdAt: createdAt,
+    updatedAt: updatedAt,
+    exist: exist ?? this.exist,
+    mainCoverUrl: mainCoverUrl,
+  );
+
   factory Playlist.fromJson(Map<String, dynamic> json) => Playlist(
     id: Json.string(json['id']),
     name: Json.string(json['name']),

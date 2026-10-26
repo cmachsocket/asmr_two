@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../core/api/api_exception.dart';
 import '../core/api/asmr_api.dart';
 import '../core/models/playlist.dart';
+import 'library_controller.dart';
 
 /// 「加入播放列表」面板的状态：我的播放列表与作品的归属。
 class AddToPlaylistController extends GetxController {
@@ -39,10 +40,22 @@ class AddToPlaylistController extends GetxController {
 
   int _page = 1;
 
+  /// 是否改过作品归属，决定关闭面板时要不要刷新收藏库。
+  bool _changed = false;
+
   @override
   void onInit() {
     super.onInit();
     load();
+  }
+
+  @override
+  void onClose() {
+    // 收藏库页的卡片也显示作品数，改过归属就让它重新拉一次。
+    if (_changed && Get.isRegistered<LibraryController>()) {
+      Get.find<LibraryController>().reload();
+    }
+    super.onClose();
   }
 
   /// 加载我的播放列表，[more] 为真时接着往下翻。
@@ -91,6 +104,8 @@ class AddToPlaylistController extends GetxController {
         await api.addWorksToPlaylist(playlist.id, [workId]);
         selected.add(playlist.id);
       }
+      _syncCount(playlist.id, added: !marked);
+      _changed = true;
       return null;
     } on ApiException catch (e) {
       return e.message;
@@ -99,5 +114,19 @@ class AddToPlaylistController extends GetxController {
     } finally {
       pending.remove(playlist.id);
     }
+  }
+
+  /// 同步列表里的作品数量与归属。
+  void _syncCount(String playlistId, {required bool added}) {
+    final index = _playlists.indexWhere(
+      (playlist) => playlist.id == playlistId,
+    );
+    if (index < 0) return;
+    final current = _playlists[index];
+    final worksCount = current.worksCount + (added ? 1 : -1);
+    _playlists[index] = current.copyWith(
+      worksCount: worksCount < 0 ? 0 : worksCount,
+      exist: added,
+    );
   }
 }

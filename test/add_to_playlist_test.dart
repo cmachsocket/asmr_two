@@ -144,4 +144,32 @@ void main() {
       'works': [1],
     });
   });
+
+  testWidgets('加入后列表里的作品数跟着加一', (tester) async {
+    await pumpBody(tester);
+
+    await tester.longPress(find.byType(AsmrCard));
+    await tester.pumpAndSettle();
+    expect(find.text('3 个作品'), findsOneWidget);
+
+    await tester.tap(find.text('默认收藏'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('4 个作品'), findsOneWidget);
+    expect(find.text('3 个作品'), findsNothing);
+  });
+
+  testWidgets('移出后列表里的作品数跟着减一', (tester) async {
+    await pumpBody(tester);
+
+    await tester.longPress(find.byType(AsmrCard));
+    await tester.pumpAndSettle();
+    expect(find.text('5 个作品'), findsOneWidget);
+
+    await tester.tap(find.text('我喜欢的'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('4 个作品'), findsOneWidget);
+    expect(find.text('5 个作品'), findsNothing);
+  });
 }
