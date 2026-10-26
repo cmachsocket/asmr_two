@@ -56,7 +56,8 @@ class HomeScreen extends GetView<HomeController> {
       case HomeScreenTab.library:
         return LibraryScreenBinding();
       case HomeScreenTab.settings:
-        return SettingsScreenBinding();
+        // 设置页的 controller 在 AppBinding 里全局注册（托盘也要读退出行为）。
+        return null;
     }
   }
 
