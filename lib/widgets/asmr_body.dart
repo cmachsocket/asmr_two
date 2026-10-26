@@ -25,7 +25,7 @@ class ASMRBody extends StatelessWidget {
   final void Function(int workId)? onWorkTap;
 
   /// 1:1 容器下的列数。
-  static const int baseColumns = 4;
+  static const int baseColumns = 3;
 
   /// 基准宽高比，1 表示 1:1。
   static const double baseRatio = 1;

@@ -16,7 +16,7 @@ class SearchScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const SearchView();
+    return const SearchView(onWorkTap: openDetail);
   }
 }
 
@@ -31,7 +31,8 @@ class SearchPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('搜索')),
-      body: SearchView(entry: entry),
+      // 浮层盖住整个应用，详情页也要推到根导航器，否则会被浮层挡住。
+      body: SearchView(entry: entry, onWorkTap: openDetailOnOverlay),
     );
   }
 }
@@ -54,10 +55,13 @@ void openTagSearch(String tag) {
 
 /// 搜索页内容：搜索栏与结果。
 class SearchView extends GetView<SearchScreenController> {
-  const SearchView({super.key, this.entry});
+  const SearchView({super.key, this.entry, this.onWorkTap});
 
   /// 打开时的搜索内容，决定用哪个 controller。
   final SearchEntry? entry;
+
+  /// 点作品时的回调，默认推到外壳导航器。
+  final void Function(int workId)? onWorkTap;
 
   @override
   SearchScreenController get controller =>
@@ -94,7 +98,7 @@ class SearchView extends GetView<SearchScreenController> {
           child: ASMRBody(
             works: works,
             onTagTap: openTagSearch,
-            onWorkTap: openDetail,
+            onWorkTap: onWorkTap ?? openDetail,
           ),
         ),
         Align(

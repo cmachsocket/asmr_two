@@ -54,8 +54,11 @@ void main() {
     PaintingBinding.instance.imageCache.clearLiveImages();
   });
 
-  testWidgets('容器 1:1 时排 4 列', (tester) async {
-    expect(await _columnsAt(tester, const Size(400, 400)), 4);
+  testWidgets('容器 1:1 时排基准列数', (tester) async {
+    expect(
+      await _columnsAt(tester, const Size(400, 400)),
+      ASMRBody.baseColumns,
+    );
   });
 
   testWidgets('容器变窄变高时列数减少，但不少于 2 列', (tester) async {

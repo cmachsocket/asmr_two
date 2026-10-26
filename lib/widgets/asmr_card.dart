@@ -45,7 +45,12 @@ class AsmrCard extends StatelessWidget {
               ),
             ),
             ListTile(
-              title: Text(title, style: textTheme.titleMedium),
+              title: Text(
+                title,
+                style: textTheme.titleMedium,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -56,11 +61,11 @@ class AsmrCard extends StatelessWidget {
                         for (final tag in tags)
                           onTagTap == null
                               ? Chip(
-                                  label: Text(tag),
+                                  label: Text(tag, style: textTheme.bodySmall),
                                   shape: const StadiumBorder(),
                                 )
                               : ActionChip(
-                                  label: Text(tag),
+                                  label: Text(tag, style: textTheme.bodySmall),
                                   shape: const StadiumBorder(),
                                   onPressed: () => onTagTap!(tag),
                                 ),

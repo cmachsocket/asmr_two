@@ -1,11 +1,14 @@
 import 'package:asmr_two/core/api/asmr_api.dart';
 import 'package:asmr_two/core/audio/audio_player_service.dart';
+import 'package:asmr_two/core/default.dart';
 import 'package:asmr_two/core/models/work.dart';
+import 'package:asmr_two/controller/home_controller.dart';
 import 'package:asmr_two/screens/detail_screen.dart';
 import 'package:asmr_two/screens/search_screen.dart';
 import 'package:asmr_two/state/player_controller.dart';
 import 'package:asmr_two/widgets/asmr_body.dart';
 import 'package:asmr_two/widgets/asmr_card.dart';
+import 'package:asmr_two/widgets/bottom_player.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -66,6 +69,30 @@ const List<Map<String, dynamic>> _trackJson = [
   },
 ];
 
+/// 造一个带外壳导航器的应用。
+///
+/// 外壳导航器是底部播放器所在的那一层，推进去的页面仍在应用内；
+/// [bottom] 是播放器这类常驻在导航器下方的部件。
+Widget shellApp({required Widget home, Widget? bottom}) {
+  return GetMaterialApp(
+    home: Scaffold(
+      body: Column(
+        children: [
+          Expanded(
+            child: Navigator(
+              key: Get.nestedKey(DefaultValues.shellNavigatorId),
+              initialRoute: '/',
+              onGenerateRoute: (settings) =>
+                  settings.name == '/' ? GetPageRoute(page: () => home) : null,
+            ),
+          ),
+          ?bottom,
+        ],
+      ),
+    ),
+  );
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -101,6 +128,7 @@ void main() {
       ),
     );
     Get.put(PlayerController());
+    Get.put(HomeController());
   });
 
   tearDown(() async {
@@ -195,12 +223,10 @@ void main() {
 
     await mockCoverImage(tester, mockCoverUrl);
     await tester.pumpWidget(
-      GetMaterialApp(
-        home: Scaffold(
-          body: ASMRBody(
-            works: [Work.fromJson(_workJson())],
-            onWorkTap: openDetail,
-          ),
+      shellApp(
+        home: ASMRBody(
+          works: [Work.fromJson(_workJson())],
+          onWorkTap: openDetail,
         ),
       ),
     );
@@ -216,5 +242,69 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.byType(DetailScreen), findsOneWidget);
     expect(find.text('第一曲'), findsOneWidget);
+  });
+
+  testWidgets('详情页推进外壳导航器，底部播放器常驻', (tester) async {
+    tester.view.physicalSize = const Size(1000, 2000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await mockCoverImage(tester, mockCoverUrl);
+    await tester.pumpWidget(
+      shellApp(
+        home: ASMRBody(
+          works: [Work.fromJson(_workJson())],
+          onWorkTap: openDetail,
+        ),
+        bottom: const SizedBox(height: 120, child: BottomPlayer()),
+      ),
+    );
+    await tester.pumpAndSettle();
+    addTearDown(() async {
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+    });
+
+    await tester.tap(find.byType(AsmrCard).first);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(DetailScreen), findsOneWidget);
+    // 详情页盖在外壳导航器里，外壳（含播放器）没有被盖掉
+    expect(find.byType(BottomPlayer), findsOneWidget);
+  });
+
+  testWidgets('详情页自带 app bar，tab 页面的 app bar 被盖掉', (tester) async {
+    tester.view.physicalSize = const Size(1000, 2000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await mockCoverImage(tester, mockCoverUrl);
+    await tester.pumpWidget(
+      shellApp(
+        home: Scaffold(
+          appBar: AppBar(title: const Text('发现')),
+          body: ASMRBody(
+            works: [Work.fromJson(_workJson())],
+            onWorkTap: openDetail,
+          ),
+        ),
+        bottom: const SizedBox(height: 120, child: BottomPlayer()),
+      ),
+    );
+    await tester.pumpAndSettle();
+    addTearDown(() async {
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+    });
+
+    await tester.tap(find.byType(AsmrCard).first);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(DetailScreen), findsOneWidget);
+    // 详情页的 app bar 顶上来，tab 页面的 app bar 被盖掉
+    expect(find.widgetWithText(AppBar, '测试作品'), findsOneWidget);
+    expect(find.widgetWithText(AppBar, '发现'), findsNothing);
+    // 底部播放器常驻
+    expect(find.byType(BottomPlayer), findsOneWidget);
   });
 }

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- 其余域名只允许 https -->
+    <base-config cleartextTrafficPermitted="false" />
+    <!-- just_audio 的本地代理跑在 127.0.0.1 上：
+         播放带 headers 的音源时它会先把地址改写成 http://127.0.0.1:<port>/...，
+         再由代理转发到真实的 https 源。
+         Android 默认禁止明文流量，所以这里只给回环地址开口子。 -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">127.0.0.1</domain>
+    </domain-config>
+</network-security-config>

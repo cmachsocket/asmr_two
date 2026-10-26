@@ -15,6 +15,10 @@ import 'settings_screen.dart';
 enum HomeScreenTab { find, search, library, settings }
 
 /// 首页，浏览作品列表。
+///
+/// 外壳只管导航器、底部播放器与标签栏；
+/// app bar 在 tab 页面里，详情页这类子页面推进来时会把整格盖掉，
+/// 所以任何时候只有一条 app bar。
 class HomeScreen extends GetView<HomeController> {
   const HomeScreen({super.key});
 
@@ -23,17 +27,24 @@ class HomeScreen extends GetView<HomeController> {
   static const int landscapeFlex = 5;
   static const int bottomPlayerFlex = 1;
 
-  static Widget _screens(HomeScreenTab tab) {
-    switch (tab) {
-      case HomeScreenTab.find:
-        return const FindScreen();
-      case HomeScreenTab.search:
-        return const SearchScreen();
-      case HomeScreenTab.library:
-        return const LibraryScreen();
-      case HomeScreenTab.settings:
-        return const SettingsScreen();
-    }
+  static Widget _screens(HomeScreenTab tab, HomeController controller) {
+    return Scaffold(
+      appBar: ContextAppBar(
+        appbarSelector: controller.appbarSelector,
+        children: [
+          AppBar(title: const Text("发现"), key: const ValueKey("发现")),
+          AppBar(title: const Text("搜索"), key: const ValueKey("搜索")),
+          AppBar(title: const Text("我的"), key: const ValueKey("我的")),
+          AppBar(title: const Text("设置"), key: const ValueKey("设置")),
+        ],
+      ),
+      body: switch (tab) {
+        HomeScreenTab.find => const FindScreen(),
+        HomeScreenTab.search => const SearchScreen(),
+        HomeScreenTab.library => const LibraryScreen(),
+        HomeScreenTab.settings => const SettingsScreen(),
+      },
+    );
   }
 
   static Bindings? _bindings(HomeScreenTab tab) {
@@ -49,7 +60,7 @@ class HomeScreen extends GetView<HomeController> {
     }
   }
 
-  static Widget _navigator(HomeScreenTab tab) {
+  static Widget _navigator(HomeScreenTab tab, HomeController controller) {
     final key = Get.nestedKey(DefaultValues.shellNavigatorId);
     return NavigatorPopHandler(
       onPopWithResult: (result) {
@@ -65,7 +76,7 @@ class HomeScreen extends GetView<HomeController> {
         onGenerateRoute: (settings) {
           if (settings.name == '/') {
             return GetPageRoute(
-              page: () => _screens(tab),
+              page: () => _screens(tab, controller),
               binding: _bindings(tab),
             );
           }
@@ -75,12 +86,14 @@ class HomeScreen extends GetView<HomeController> {
     );
   }
 
-  static Widget _responsiveBody(HomeScreenTab i) {
+  static Widget _responsiveBody(HomeScreenTab i, HomeController controller) {
     return Column(
       children: [
         OrientationLayoutBuilder(
-          portrait: (_) => Expanded(flex: protraitFlex, child: _navigator(i)),
-          landscape: (_) => Expanded(flex: landscapeFlex, child: _navigator(i)),
+          portrait: (_) =>
+              Expanded(flex: protraitFlex, child: _navigator(i, controller)),
+          landscape: (_) =>
+              Expanded(flex: landscapeFlex, child: _navigator(i, controller)),
         ),
         const Expanded(flex: bottomPlayerFlex, child: BottomPlayer()),
       ],
@@ -96,16 +109,7 @@ class HomeScreen extends GetView<HomeController> {
           final tailOfTheTab = maxPageIndex - 1;
           final tabIndex = controller.index.value.clamp(0, tailOfTheTab);
           return Scaffold(
-            appBar: ContextAppBar(
-              appbarSelector: controller.appbarSelector,
-              children: [
-                AppBar(title: const Text("发现"), key: const ValueKey("发现")),
-                AppBar(title: const Text("搜索"), key: const ValueKey("搜索")),
-                AppBar(title: const Text("我的"), key: const ValueKey("我的")),
-                AppBar(title: const Text("设置"), key: const ValueKey("设置")),
-              ],
-            ),
-            body: _responsiveBody(HomeScreenTab.values[tabIndex]),
+            body: _responsiveBody(HomeScreenTab.values[tabIndex], controller),
 
             bottomNavigationBar: BottomNavigationBar(
               currentIndex: tabIndex,
@@ -115,7 +119,7 @@ class HomeScreen extends GetView<HomeController> {
                 final toTheTab =
                     HomeScreenTab.values[changedIndex.clamp(0, tailOfTheTab)];
                 Get.offAll(
-                  () => _screens(toTheTab),
+                  () => _screens(toTheTab, controller),
                   binding: _bindings(toTheTab),
                   id: DefaultValues.shellNavigatorId,
                 );
