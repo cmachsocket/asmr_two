@@ -7,6 +7,7 @@ import 'package:asmr_two/screens/detail_screen.dart';
 import 'package:asmr_two/screens/find_screen.dart';
 import 'package:asmr_two/screens/search_screen.dart';
 import 'package:asmr_two/state/player_controller.dart';
+import 'package:asmr_two/widgets/add_to_playlist_sheet.dart';
 import 'package:asmr_two/widgets/asmr_body.dart';
 import 'package:asmr_two/widgets/asmr_card.dart';
 import 'package:asmr_two/widgets/bottom_player.dart';
@@ -118,6 +119,14 @@ void main() {
       if (path.startsWith('/api/tracks/')) return jsonBody(_trackJson);
       if (path.startsWith('/api/search')) return jsonBody(worksResponse());
       if (path == '/api/works') return jsonBody(worksResponse());
+      if (path == '/api/playlist/get-work-exist-status-in-my-playlists') {
+        return jsonBody({
+          'playlists': [
+            {'id': 'uuid-1', 'name': '默认收藏', 'works_count': 3},
+          ],
+          'pagination': {'currentPage': 1, 'pageSize': 12, 'totalCount': 1},
+        });
+      }
       return errorBody(message: 'unexpected $path');
     };
     final (client, fake) = buildClient((options) => handler(options));
@@ -178,6 +187,17 @@ void main() {
     expect(find.text('mp3'), findsOneWidget);
     expect(find.text('第一曲'), findsOneWidget);
     expect(find.text('第二曲'), findsOneWidget);
+  });
+
+  testWidgets('详情页的加入播放列表按钮弹出播放列表面板', (tester) async {
+    await pumpDetail(tester);
+
+    await tester.tap(find.byIcon(Icons.playlist_add));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.byType(AddToPlaylistSheet), findsOneWidget);
+    expect(find.text('默认收藏'), findsOneWidget);
   });
 
   testWidgets('点曲目行从该曲起播', (tester) async {

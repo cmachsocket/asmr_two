@@ -7,6 +7,7 @@ import '../core/audio/track_plan.dart';
 import '../core/default.dart';
 import '../core/models/work.dart';
 import '../state/work_detail_controller.dart';
+import '../widgets/add_to_playlist_sheet.dart';
 import '../widgets/message_view.dart';
 import 'search_screen.dart';
 
@@ -119,6 +120,11 @@ class _WorkHeader extends StatelessWidget {
           ),
           ListTile(
             title: Text(work.title, style: textTheme.titleLarge),
+            trailing: IconButton(
+              tooltip: '加入播放列表',
+              icon: const Icon(Icons.playlist_add),
+              onPressed: () => showAddToPlaylist(context, work.id),
+            ),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
