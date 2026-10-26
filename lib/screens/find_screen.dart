@@ -4,6 +4,7 @@ import "package:get/get.dart";
 import '../core/api/asmr_api.dart';
 import '../core/models/work.dart';
 import '../state/work_feed_controller.dart';
+import '../widgets/add_to_playlist_sheet.dart';
 import '../widgets/asmr_body.dart';
 import '../widgets/floating_paginator.dart';
 import '../widgets/message_view.dart';
@@ -21,7 +22,7 @@ class FindScreen extends GetView<WorkFeedController> {
       final error = controller.error.value;
       return Stack(
         children: [
-          Positioned.fill(child: _body(works, error)),
+          Positioned.fill(child: _body(context, works, error)),
           Align(
             alignment: Alignment.bottomRight,
             child: FloatingPaginator(
@@ -36,7 +37,7 @@ class FindScreen extends GetView<WorkFeedController> {
   }
 
   /// 列表主体：出错给重试入口，加载中给进度圈，否则给作品网格。
-  Widget _body(List<Work> works, String? error) {
+  Widget _body(BuildContext context, List<Work> works, String? error) {
     if (error != null) {
       return MessageView(message: error, onRetry: controller.reload);
     }
@@ -49,6 +50,7 @@ class FindScreen extends GetView<WorkFeedController> {
       works: works,
       onTagTap: openTagSearch,
       onWorkTap: openDetail,
+      onAddToPlaylist: (workId) => showAddToPlaylist(context, workId),
     );
   }
 }

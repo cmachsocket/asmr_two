@@ -11,6 +11,7 @@ class AsmrCard extends StatelessWidget {
     required this.duration,
     this.onTagTap,
     this.onTap,
+    this.onAddToPlaylist,
   });
 
   final String title;
@@ -24,6 +25,9 @@ class AsmrCard extends StatelessWidget {
   /// 点卡片时的回调，为空时卡片不可点。
   final VoidCallback? onTap;
 
+  /// 长按或右键卡片时的回调，为空时不响应。
+  final VoidCallback? onAddToPlaylist;
+
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
@@ -32,6 +36,8 @@ class AsmrCard extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
+        onLongPress: onAddToPlaylist,
+        onSecondaryTap: onAddToPlaylist,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../core/api/asmr_api.dart';
 import '../core/default.dart';
 import '../controller/search_controller.dart';
+import '../widgets/add_to_playlist_sheet.dart';
 import '../widgets/asmr_body.dart';
 import '../widgets/floating_paginator.dart';
 import '../widgets/message_view.dart';
@@ -71,13 +72,13 @@ class SearchView extends GetView<SearchScreenController> {
     return Column(
       children: [
         _SearchBar(controller: controller),
-        Expanded(child: Obx(() => _results())),
+        Expanded(child: Obx(() => _results(context))),
       ],
     );
   }
 
   /// 搜索结果区。
-  Widget _results() {
+  Widget _results(BuildContext context) {
     final works = controller.works;
     final error = controller.error.value;
     if (error != null) {
@@ -98,6 +99,7 @@ class SearchView extends GetView<SearchScreenController> {
             works: works,
             onTagTap: (tag) => openTagSearch(tag, current: entry),
             onWorkTap: openDetail,
+            onAddToPlaylist: (workId) => showAddToPlaylist(context, workId),
           ),
         ),
         Align(

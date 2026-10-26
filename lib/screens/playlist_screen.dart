@@ -7,6 +7,7 @@ import '../core/models/playlist.dart';
 import '../controller/library_controller.dart';
 import '../controller/playlist_controller.dart';
 import '../state/auth_controller.dart';
+import '../widgets/add_to_playlist_sheet.dart';
 import '../widgets/asmr_body.dart';
 import '../widgets/floating_paginator.dart';
 import '../widgets/message_view.dart';
@@ -36,7 +37,7 @@ class PlaylistScreen extends GetView<PlaylistController> {
         title: Obx(() => _title(context)),
         actions: [Obx(() => _deleteAction(context))],
       ),
-      body: Obx(_works),
+      body: Obx(() => _works(context)),
     );
   }
 
@@ -80,7 +81,7 @@ class PlaylistScreen extends GetView<PlaylistController> {
   }
 
   /// 列表里的作品。
-  Widget _works() {
+  Widget _works(BuildContext context) {
     final error = controller.error.value;
     if (error != null) {
       return MessageView(message: error, onRetry: controller.reload);
@@ -98,6 +99,7 @@ class PlaylistScreen extends GetView<PlaylistController> {
             works: works,
             onTagTap: openTagSearch,
             onWorkTap: openDetail,
+            onAddToPlaylist: (workId) => showAddToPlaylist(context, workId),
           ),
         ),
         Align(

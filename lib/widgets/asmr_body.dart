@@ -14,6 +14,7 @@ class ASMRBody extends StatelessWidget {
     required this.works,
     this.onTagTap,
     this.onWorkTap,
+    this.onAddToPlaylist,
   });
 
   final List<Work> works;
@@ -23,6 +24,9 @@ class ASMRBody extends StatelessWidget {
 
   /// 点作品时的回调，参数为作品 id；为空时卡片不可点。
   final void Function(int workId)? onWorkTap;
+
+  /// 长按或右键作品时的回调，参数为作品 id；为空时不响应。
+  final void Function(int workId)? onAddToPlaylist;
 
   /// 1:1 容器下的列数。
   static const int baseColumns = 3;
@@ -51,6 +55,9 @@ class ASMRBody extends StatelessWidget {
           tags: [for (final tag in work.tags) tag.name],
           onTagTap: onTagTap,
           onTap: onWorkTap == null ? null : () => onWorkTap!(work.id),
+          onAddToPlaylist: onAddToPlaylist == null
+              ? null
+              : () => onAddToPlaylist!(work.id),
           imageUrl: work.mainCoverUrl.isNotEmpty
               ? work.mainCoverUrl
               : work.thumbnailCoverUrl,
