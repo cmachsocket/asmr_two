@@ -31,6 +31,16 @@ void main() {
       expect(ApiEndpoints.mediaStreamLow('1/2'), '/api/media/stream-low/1/2');
       expect(ApiEndpoints.mediaDownload('1/2'), '/api/media/download/1/2');
     });
+
+    test('播放列表路径按官网形式拼接', () {
+      expect(ApiEndpoints.playlists, '/api/playlist/get-playlists');
+      expect(ApiEndpoints.playlistWorks, '/api/playlist/get-playlist-works');
+      expect(
+        ApiEndpoints.playlistMetadata,
+        '/api/playlist/get-playlist-metadata',
+      );
+      expect(ApiEndpoints.deletePlaylist, '/api/playlist/delete-playlist');
+    });
   });
 
   group('SearchKeyword 编码', () {
@@ -80,6 +90,12 @@ void main() {
       expect(PlaylistPrivacy.private.value, 0);
       expect(PlaylistPrivacy.known.value, 1);
       expect(PlaylistPrivacy.public.value, 2);
+    });
+
+    test('播放列表筛选条件与官网一致', () {
+      expect(PlaylistFilter.all.value, 'all');
+      expect(PlaylistFilter.owned.value, 'owned');
+      expect(PlaylistFilter.liked.value, 'liked');
     });
   });
 }

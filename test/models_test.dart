@@ -220,6 +220,36 @@ void main() {
       expect(playlist.privacy, PlaylistPrivacy.private);
       expect(playlist.worksCount, 3);
     });
+
+    test('系统内置列表用中文名展示', () {
+      final liked = Playlist.fromJson({
+        'id': 'a',
+        'name': '__SYS_PLAYLIST_LIKED',
+      });
+      final marked = Playlist.fromJson({
+        'id': 'b',
+        'name': '__SYS_PLAYLIST_MARKED',
+      });
+      final own = Playlist.fromJson({'id': 'c', 'name': '默认收藏'});
+
+      expect(liked.displayName, '我喜欢的');
+      expect(marked.displayName, '我标记的');
+      expect(own.displayName, '默认收藏');
+    });
+
+    test('封面地址缺失时为空串', () {
+      final playlist = Playlist.fromJson({
+        'id': 'uuid',
+        'name': '默认收藏',
+        'mainCoverUrl': 'https://cdn/cover.jpg',
+      });
+
+      expect(playlist.mainCoverUrl, 'https://cdn/cover.jpg');
+      expect(
+        Playlist.fromJson({'id': 'uuid', 'name': '默认收藏'}).mainCoverUrl,
+        isEmpty,
+      );
+    });
   });
 
   group('ReviewProgress 解析', () {

@@ -362,6 +362,30 @@ Dart 方法：`fetchMyReviews`、`submitReview`、`deleteReview`、`voteWorkTag`
 
 系统内置列表的 `name` 以 `__SYS_PLAYLIST_` 开头。
 
+### GET `/api/playlist/get-playlists`
+
+我的播放列表，收藏库页用它列出全部列表。
+
+| 参数 | 类型 | 说明 |
+| --- | --- | --- |
+| `page` | int | 页码 |
+| `pageSize` | int | 每页数量，官网默认 12 |
+| `filterBy` | string | `all` 全部、`owned` 我创建的、`liked` 我点赞的 |
+
+响应 `{ playlists: Playlist[], pagination }`，`Playlist` 字段同上，另有 `mainCoverUrl` 封面地址。
+
+### GET `/api/playlist/get-playlist-works`
+
+播放列表里的作品。
+
+| 参数 | 类型 | 说明 |
+| --- | --- | --- |
+| `id` | string | 播放列表 id（UUID） |
+| `page` | int | 页码 |
+| `pageSize` | int | 每页数量，官网默认 12 |
+
+响应 `{ works: Work[], pagination }`，与作品列表接口的结构一致。
+
 ### GET `/api/playlist/get-playlist-metadata?id={id}`
 
 播放列表详情，返回单个 `Playlist`。
@@ -385,7 +409,7 @@ Dart 方法：`fetchMyReviews`、`submitReview`、`deleteReview`、`voteWorkTag`
 
 **注意**：`works` 用站内 id（如 `1712623`），传 DLsite 编号（如 `RJ01712623`）会被拒绝。
 
-Dart 方法：`fetchMyPlaylists`、`fetchPlaylistDetail`、`fetchDefaultPlaylist`、`createPlaylist`、`addWorksToPlaylist`、`removeWorksFromPlaylist`
+Dart 方法：`fetchMyPlaylists`、`fetchPlaylists`、`fetchPlaylistWorks`、`fetchPlaylistDetail`、`fetchDefaultPlaylist`、`createPlaylist`、`addWorksToPlaylist`、`removeWorksFromPlaylist`
 
 ## 推荐
 
@@ -433,6 +457,6 @@ Dart 方法：`fetchPopular`、`fetchRecommended`、`fetchSimilarWorks`、`repor
 | 标签 / 社团 / 声优 | `fetchTags`、`fetchTag`、`fetchCircles`、`fetchCircle`、`fetchVoiceActors`、`fetchVoiceActor` |
 | 账号 | `fetchSession`、`login`、`register` |
 | 评论 / 投票 | `fetchMyReviews`、`submitReview`、`deleteReview`、`voteWorkTag` |
-| 播放列表 | `fetchMyPlaylists`、`fetchPlaylistDetail`、`fetchDefaultPlaylist`、`createPlaylist`、`addWorksToPlaylist`、`removeWorksFromPlaylist` |
+| 播放列表 | `fetchMyPlaylists`、`fetchPlaylists`、`fetchPlaylistWorks`、`fetchPlaylistDetail`、`fetchDefaultPlaylist`、`createPlaylist`、`addWorksToPlaylist`、`removeWorksFromPlaylist` |
 | 推荐 | `fetchPopular`、`fetchRecommended`、`fetchSimilarWorks`、`reportFeedback` |
 | 资源 | `coverUrl`、`streamUrl`、`downloadUrl`、`resolveStreamUrl`、`resolveDownloadUrl`、`webUrl` |

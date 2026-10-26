@@ -1,6 +1,7 @@
 import 'package:asmr_two/core/api/api_client.dart';
 import 'package:asmr_two/core/api/api_endpoints.dart';
 import 'package:asmr_two/core/api/asmr_api.dart';
+import 'package:asmr_two/core/models/playlist.dart';
 import 'package:asmr_two/core/models/review.dart';
 import 'package:asmr_two/core/models/track.dart';
 import 'package:dio/dio.dart';
@@ -213,6 +214,59 @@ void main() {
         adapter.requests.last.uri.path,
         '/api/playlist/remove-works-from-playlist',
       );
+    });
+
+    test('删除播放列表带上 id', () async {
+      await api.deletePlaylist('uuid');
+
+      final request = adapter.requests.single;
+      expect(request.method, 'POST');
+      expect(request.uri.path, '/api/playlist/delete-playlist');
+      expect(request.data, {'id': 'uuid'});
+    });
+
+    test('播放列表带上 filterBy', () async {
+      adapter = FakeAdapter(
+        (options) async => jsonBody({
+          'playlists': [
+            {'id': 'uuid', 'name': '默认收藏', 'privacy': 0},
+          ],
+          'pagination': {'currentPage': 1, 'pageSize': 12, 'totalCount': 1},
+        }),
+      );
+      final dio = Dio()..httpClientAdapter = adapter;
+      api = AsmrApi(ApiClient(tokenProvider: () => null, dio: dio));
+
+      final page = await api.fetchPlaylists(filter: PlaylistFilter.owned);
+
+      expect(page.playlists.single.id, 'uuid');
+      expect(adapter.requests.single.uri.path, '/api/playlist/get-playlists');
+      expect(adapter.requests.single.queryParameters['filterBy'], 'owned');
+    });
+
+    test('播放列表里的作品解析分页', () async {
+      adapter = FakeAdapter(
+        (options) async => jsonBody({
+          'works': [
+            {'id': 1, 'title': '作品一'},
+          ],
+          'pagination': {'page': 2, 'pageSize': 12, 'totalCount': 30},
+        }),
+      );
+      final dio = Dio()..httpClientAdapter = adapter;
+      api = AsmrApi(ApiClient(tokenProvider: () => null, dio: dio));
+
+      final page = await api.fetchPlaylistWorks(playlistId: 'uuid', page: 2);
+
+      expect(page.works.single.id, 1);
+      expect(page.pagination.page, 2);
+      expect(page.pagination.totalCount, 30);
+      expect(
+        adapter.requests.single.uri.path,
+        '/api/playlist/get-playlist-works',
+      );
+      expect(adapter.requests.single.queryParameters['id'], 'uuid');
+      expect(adapter.requests.single.queryParameters['page'], 2);
     });
   });
 

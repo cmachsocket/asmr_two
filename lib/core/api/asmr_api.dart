@@ -316,6 +316,36 @@ class AsmrApi {
     return PlaylistListPage.fromJson(Json.map(data));
   }
 
+  /// 我的播放列表。
+  ///
+  /// [filter] 区分「我创建的」与「我点赞的」，默认给出全部可见的列表。
+  Future<PlaylistListPage> fetchPlaylists({
+    PlaylistFilter filter = PlaylistFilter.all,
+    int page = 1,
+    int pageSize = 12,
+  }) async {
+    final data = await client.get(
+      ApiEndpoints.playlists,
+      query: {'page': page, 'pageSize': pageSize, 'filterBy': filter.value},
+      auth: true,
+    );
+    return PlaylistListPage.fromJson(Json.map(data));
+  }
+
+  /// 播放列表里的作品。
+  Future<WorksPage> fetchPlaylistWorks({
+    required String playlistId,
+    int page = 1,
+    int pageSize = 12,
+  }) async {
+    final data = await client.get(
+      ApiEndpoints.playlistWorks,
+      query: {'id': playlistId, 'page': page, 'pageSize': pageSize},
+      auth: true,
+    );
+    return WorksPage.fromJson(Json.map(data));
+  }
+
   /// 播放列表详情。
   Future<Playlist> fetchPlaylistDetail(String playlistId) async {
     final data = await client.get(
@@ -354,6 +384,15 @@ class AsmrApi {
       auth: true,
     );
     return Playlist.fromJson(Json.map(data));
+  }
+
+  /// 删除播放列表。
+  Future<void> deletePlaylist(String playlistId) async {
+    await client.post(
+      ApiEndpoints.deletePlaylist,
+      body: {'id': playlistId},
+      auth: true,
+    );
   }
 
   /// 向播放列表添加作品。

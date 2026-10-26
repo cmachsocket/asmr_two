@@ -57,6 +57,12 @@ class ApiEndpoints {
   static const String workPlaylistStatus =
       '/api/playlist/get-work-exist-status-in-my-playlists';
 
+  /// 我的播放列表，可按归属筛选。
+  static const String playlists = '/api/playlist/get-playlists';
+
+  /// 播放列表内的作品。
+  static const String playlistWorks = '/api/playlist/get-playlist-works';
+
   /// 播放列表详情。
   static const String playlistMetadata = '/api/playlist/get-playlist-metadata';
 
@@ -66,6 +72,9 @@ class ApiEndpoints {
 
   /// 创建播放列表。
   static const String createPlaylist = '/api/playlist/create-playlist';
+
+  /// 删除播放列表。
+  static const String deletePlaylist = '/api/playlist/delete-playlist';
 
   /// 向播放列表添加作品。
   static const String addWorksToPlaylist =

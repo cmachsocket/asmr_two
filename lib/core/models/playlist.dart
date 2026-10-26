@@ -16,6 +16,13 @@ enum PlaylistPrivacy {
 
   final int value;
 
+  /// 展示名。
+  String get label => switch (this) {
+    PlaylistPrivacy.private => '私密',
+    PlaylistPrivacy.known => '登录可见',
+    PlaylistPrivacy.public => '公开',
+  };
+
   static PlaylistPrivacy fromValue(dynamic value) {
     final code = Json.integer(value);
     for (final privacy in PlaylistPrivacy.values) {
@@ -23,6 +30,26 @@ enum PlaylistPrivacy {
     }
     return PlaylistPrivacy.private;
   }
+}
+
+/// 播放列表列表的筛选条件，对应接口的 `filterBy` 参数。
+enum PlaylistFilter {
+  /// 全部可见的列表。
+  all('all', '全部'),
+
+  /// 自己创建的列表。
+  owned('owned', '我创建的'),
+
+  /// 自己点赞的列表。
+  liked('liked', '我点赞的');
+
+  const PlaylistFilter(this.value, this.label);
+
+  /// 接口参数值。
+  final String value;
+
+  /// 展示名。
+  final String label;
 }
 
 /// 云端播放列表。
@@ -40,6 +67,7 @@ class Playlist {
     this.createdAt,
     this.updatedAt,
     this.exist = false,
+    this.mainCoverUrl = '',
   });
 
   /// 列表 id 为 UUID 字符串。
@@ -65,8 +93,24 @@ class Playlist {
   /// 该作品是否已在此列表中（仅收藏状态接口返回）。
   final bool exist;
 
+  /// 列表封面图地址。
+  final String mainCoverUrl;
+
   /// 是否为系统内置列表。
   bool get isSystem => name.startsWith(_systemPrefix);
+
+  /// 展示名，系统内置列表用中文名代替内部标识。
+  String get displayName => switch (name) {
+    likedSystemName => '我喜欢的',
+    markedSystemName => '我标记的',
+    _ => name,
+  };
+
+  /// 系统内置的「我喜欢的」列表名。
+  static const String likedSystemName = '__SYS_PLAYLIST_LIKED';
+
+  /// 系统内置的「我标记的」列表名。
+  static const String markedSystemName = '__SYS_PLAYLIST_MARKED';
 
   static const _systemPrefix = '__SYS_PLAYLIST_';
 
@@ -83,6 +127,7 @@ class Playlist {
     createdAt: Json.stringOrNull(json['created_at']),
     updatedAt: Json.stringOrNull(json['updated_at']),
     exist: Json.boolean(json['exist']),
+    mainCoverUrl: Json.string(json['mainCoverUrl']),
   );
 }
 

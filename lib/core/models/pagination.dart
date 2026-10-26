@@ -21,14 +21,17 @@ class Pagination {
   /// 解析分页信息。
   ///
   /// 接口把分页放在 `pagination` 子对象里，部分旧接口直接放在顶层，
-  /// 两种形态都兼容。
+  /// 页码字段也有 `currentPage` 与 `page` 两种写法，两种形态都兼容。
   factory Pagination.fromJson(
     Map<String, dynamic> json, {
     required int itemCount,
   }) {
     final nested = Json.map(json['pagination']);
     return Pagination(
-      page: Json.integer(nested['currentPage'] ?? json['page'], fallback: 1),
+      page: Json.integer(
+        nested['currentPage'] ?? nested['page'] ?? json['page'],
+        fallback: 1,
+      ),
       pageSize: Json.integer(
         nested['pageSize'] ?? json['pageSize'],
         fallback: itemCount,
