@@ -11,6 +11,7 @@ import '../controller/home_controller.dart';
 import 'find_screen.dart';
 import 'search_screen.dart';
 import 'library_screen.dart';
+import 'playlist_create_screen.dart';
 import 'settings_screen.dart';
 
 enum HomeScreenTab { find, search, library, settings }
@@ -53,7 +54,17 @@ class HomeScreen extends GetView<HomeController> {
               ),
             ],
           ),
-          AppBar(title: const Text("我的"), key: const ValueKey("我的")),
+          AppBar(
+            title: const Text("我的"),
+            key: const ValueKey("我的"),
+            actions: [
+              IconButton(
+                tooltip: '创建播放列表',
+                icon: const Icon(Icons.add),
+                onPressed: openCreatePlaylist,
+              ),
+            ],
+          ),
           AppBar(title: const Text("设置"), key: const ValueKey("设置")),
         ],
       ),

@@ -59,6 +59,22 @@ void main() {
     }
   });
 
+  testWidgets('切到收藏库页有创建播放列表的入口', (tester) async {
+    await tester.pumpWidget(const AsmrApp());
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+
+    await tester.tap(find.text('我的').last);
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.add), findsOneWidget);
+
+    addTearDown(() async {
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+    });
+  });
+
   testWidgets('应用能起来，切到设置页能看到迁移过来的条目', (tester) async {
     await tester.pumpWidget(const AsmrApp());
     await tester.pumpAndSettle();
