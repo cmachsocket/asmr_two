@@ -29,7 +29,7 @@ class ASMRBody extends StatelessWidget {
   final void Function(int workId)? onAddToPlaylist;
 
   /// 1:1 容器下的列数。
-  static const int baseColumns = 3;
+  static const int baseColumns = 2;
 
   /// 基准宽高比，1 表示 1:1。
   static const double baseRatio = 1;

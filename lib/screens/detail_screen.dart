@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:responsive_builder/responsive_builder.dart';
 
 import '../core/api/asmr_api.dart';
 import '../core/audio/playback_item.dart';
@@ -99,6 +100,10 @@ void openDetail(int workId) {
 class _WorkHeader extends StatelessWidget {
   const _WorkHeader({required this.work, this.onTagTap});
 
+  /// 横屏时封面与信息的宽度比例。
+  static const int landscapeCoverFlex = 2;
+  static const int landscapeInfoFlex = 3;
+
   final Work work;
 
   /// 点标签时的回调，为空时标签不可点。
@@ -106,34 +111,54 @@ class _WorkHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: OrientationLayoutBuilder(
+        portrait: (_) => Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AspectRatio(
+              aspectRatio: DefaultValues.cardImageAspectRatio,
+              child: _cover(context),
+            ),
+            _info(context),
+          ],
+        ),
+        landscape: (_) => Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              flex: landscapeCoverFlex,
+              child: AspectRatio(
+                aspectRatio: DefaultValues.cardImageAspectRatio,
+                child: _cover(context),
+              ),
+            ),
+            Expanded(flex: landscapeInfoFlex, child: _info(context)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 标题、统计信息与标签。
+  Widget _info(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final meta = _metaText(work);
     final stats = _statsText(work);
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: Column(
+    return ListTile(
+      title: Text(work.title, style: textTheme.titleLarge),
+      trailing: IconButton(
+        tooltip: '加入播放列表',
+        icon: const Icon(Icons.playlist_add),
+        onPressed: () => showAddToPlaylist(context, work.id),
+      ),
+      subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AspectRatio(
-            aspectRatio: DefaultValues.cardImageAspectRatio,
-            child: _cover(context),
-          ),
-          ListTile(
-            title: Text(work.title, style: textTheme.titleLarge),
-            trailing: IconButton(
-              tooltip: '加入播放列表',
-              icon: const Icon(Icons.playlist_add),
-              onPressed: () => showAddToPlaylist(context, work.id),
-            ),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (meta.isNotEmpty) Text(meta, style: textTheme.bodySmall),
-                if (stats.isNotEmpty) Text(stats, style: textTheme.bodySmall),
-                if (work.tags.isNotEmpty) _tags(),
-              ],
-            ),
-          ),
+          if (meta.isNotEmpty) Text(meta, style: textTheme.bodySmall),
+          if (stats.isNotEmpty) Text(stats, style: textTheme.bodySmall),
+          if (work.tags.isNotEmpty) _tags(),
         ],
       ),
     );

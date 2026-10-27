@@ -155,9 +155,12 @@ void main() {
   });
 
   /// 渲染详情页并等接口数据落地。
-  Future<void> pumpDetail(WidgetTester tester) async {
+  Future<void> pumpDetail(
+    WidgetTester tester, {
+    Size size = const Size(1000, 2000),
+  }) async {
     // 详情页内容比默认视口高，放大视口让曲目行一次性完成布局。
-    tester.view.physicalSize = const Size(1000, 2000);
+    tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
 
@@ -187,6 +190,33 @@ void main() {
     expect(find.text('mp3'), findsOneWidget);
     expect(find.text('第一曲'), findsOneWidget);
     expect(find.text('第二曲'), findsOneWidget);
+  });
+
+  testWidgets('横屏时封面与标题排成一行', (tester) async {
+    await pumpDetail(tester, size: const Size(2000, 1000));
+
+    expect(tester.takeException(), isNull);
+    final cover = find.byType(Image).first;
+    final info = find.descendant(
+      of: find.byType(Card).first,
+      matching: find.byType(ListTile),
+    );
+    final title = find.descendant(
+      of: find.byType(Card).first,
+      matching: find.text('测试作品'),
+    );
+    expect(title, findsOneWidget);
+    // 标题在封面右侧，且与封面处于同一行（未落到封面下方）
+    expect(
+      tester.getTopLeft(title).dx,
+      greaterThanOrEqualTo(tester.getTopRight(cover).dx),
+    );
+    expect(
+      tester.getTopLeft(title).dy,
+      lessThan(tester.getBottomLeft(cover).dy),
+    );
+    // 右侧信息在封面旁边垂直居中
+    expect(tester.getCenter(info).dy, closeTo(tester.getCenter(cover).dy, 1));
   });
 
   testWidgets('详情页的加入播放列表按钮弹出播放列表面板', (tester) async {
