@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:asmr_two/core/api/api_client.dart';
 import 'package:asmr_two/core/api/asmr_api.dart';
 import 'package:asmr_two/core/storage/session_store.dart';
 import 'package:asmr_two/state/auth_controller.dart';
@@ -15,13 +16,15 @@ import 'support/fake_storage.dart';
 void main() {
   late Directory storageDir;
   late AuthController auth;
+  late ApiClient client;
 
   setUp(() async {
     Get.testMode = true;
     storageDir = await initFakeStorage();
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
-    final (client, _) = buildClient((options) async => jsonBody({}));
+    final (builtClient, _) = buildClient((options) async => jsonBody({}));
+    client = builtClient;
     Get.put<AsmrApi>(AsmrApi(client));
     Get.put<SessionStore>(SessionStore(prefs));
     auth = Get.put(
@@ -40,14 +43,14 @@ void main() {
   });
 
   test('默认关闭窗口就退出应用', () {
-    final settings = SettingsController(auth: auth);
+    final settings = SettingsController(auth: auth, api: client);
     settings.onInit();
 
     expect(settings.exitToTray.value, isFalse);
   });
 
   test('退出到托盘的开关会写进本地存储', () async {
-    final settings = SettingsController(auth: auth);
+    final settings = SettingsController(auth: auth, api: client);
     settings.onInit();
 
     await settings.setExitToTray(true);
@@ -56,12 +59,29 @@ void main() {
   });
 
   test('重新打开应用会读回上次的选择', () async {
-    final settings = SettingsController(auth: auth);
+    final settings = SettingsController(auth: auth, api: client);
     settings.onInit();
     await settings.setExitToTray(true);
 
-    final restored = SettingsController(auth: auth);
+    final restored = SettingsController(auth: auth, api: client);
     restored.onInit();
     expect(restored.exitToTray.value, isTrue);
+  });
+
+  test('切换镜像后立即生效并持久化', () async {
+    final settings = SettingsController(auth: auth, api: client);
+    settings.onInit();
+    expect(settings.selectedMirror.value, ApiHosts.all.first);
+    expect(client.pinnedHostIndex, 0);
+
+    final target = ApiHosts.all[2];
+    await settings.setSelectedMirror(target);
+    expect(client.pinnedHostIndex, 2);
+    expect(GetStorage().read<String>('api_mirror_v1'), target);
+
+    final restored = SettingsController(auth: auth, api: client);
+    restored.onInit();
+    expect(restored.selectedMirror.value, target);
+    expect(client.pinnedHostIndex, 2);
   });
 }

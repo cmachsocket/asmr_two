@@ -61,6 +61,23 @@ class SettingsScreen extends GetView<SettingsController> {
           ),
         ),
         ListTile(
+          leading: const Icon(Icons.dns_outlined),
+          title: const Text('选择镜像'),
+          subtitle: const Text('选择镜像源'),
+          trailing: Obx(
+            () => DropdownButton<String>(
+              value: controller.selectedMirror.value,
+              items: controller.mirrors
+                  .map(
+                    (mirror) =>
+                        DropdownMenuItem(value: mirror, child: Text(mirror)),
+                  )
+                  .toList(),
+              onChanged: controller.setSelectedMirror,
+            ),
+          ),
+        ),
+        ListTile(
           leading: const Icon(Icons.info_outline),
           title: const Text('关于'),
           subtitle: const Text('版本号 / 开源协议 / 联系方式'),

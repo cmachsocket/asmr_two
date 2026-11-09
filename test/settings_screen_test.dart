@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:asmr_two/app/app_binding.dart';
+import 'package:asmr_two/core/api/api_client.dart';
 import 'package:asmr_two/core/api/asmr_api.dart';
 import 'package:asmr_two/core/models/user.dart';
 import 'package:asmr_two/core/storage/session_store.dart';
@@ -25,6 +26,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
     final (client, _) = buildClient((options) async => jsonBody({}));
+    Get.put<ApiClient>(client);
     Get.put<AsmrApi>(AsmrApi(client));
     Get.put<SessionStore>(SessionStore(prefs));
     Get.put<ThemeController>(ThemeController());

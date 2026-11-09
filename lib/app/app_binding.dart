@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 
+import '../core/api/api_client.dart';
 import '../core/api/asmr_api.dart';
 import '../core/storage/session_store.dart';
 import '../state/auth_controller.dart';
@@ -25,7 +26,10 @@ class AppBinding extends Bindings {
 
     // 设置页的 controller 全局可用：桌面端托盘也要读「关闭窗口」的行为。
     Get.lazyPut<SettingsController>(
-      () => SettingsController(auth: Get.find<AuthController>()),
+      () => SettingsController(
+        auth: Get.find<AuthController>(),
+        api: Get.find<ApiClient>(),
+      ),
       fenix: true,
     );
   }
