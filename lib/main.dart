@@ -4,7 +4,6 @@ import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:window_manager/window_manager.dart';
 
 import 'app/app.dart';
 import 'core/api/api_client.dart';
@@ -45,7 +44,6 @@ Future<void> main() async {
   // 桌面端：窗口管理 + 系统托盘。
   // 移动端与 Web 没有窗口可管，托盘控制器也不会注册。
   if (TrayController.isSupportedPlatform) {
-    await windowManager.ensureInitialized();
     Get.put<TrayController>(TrayController());
   }
 

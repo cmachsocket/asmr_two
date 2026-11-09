@@ -8,8 +8,8 @@ import '../controller/search_controller.dart';
 class SearchFilterSheet extends GetView<SearchScreenController> {
   const SearchFilterSheet({super.key});
 
-  /// 基准宽高比下的列数。
-  static const int baseColumns = 4;
+  /// 基准宽高比下的行数。
+  static const int baseRows = 4;
 
   /// 基准宽高比，1 表示 1:1。
   static const double baseRatio = 1;
@@ -83,7 +83,7 @@ class SearchFilterSheet extends GetView<SearchScreenController> {
         final visible = controller.visibleTags;
         return AspectDrivenGrid(
           itemCount: visible.length,
-          baseColumns: baseColumns,
+          baseRows: baseRows,
           baseRatio: baseRatio,
           minColumns: minColumns,
           maxColumns: maxColumns,
@@ -100,13 +100,10 @@ class SearchFilterSheet extends GetView<SearchScreenController> {
         );
       }
       final visible = controller.visibleVoiceActors;
-      return AspectDrivenGrid(
+      return MasonryAspectDrivenGrid(
         itemCount: visible.length,
-        baseColumns: baseColumns,
+        baseRows: baseRows,
         baseRatio: baseRatio,
-        minColumns: minColumns,
-        maxColumns: maxColumns,
-        childAspectRatio: childAspectRatio,
         itemBuilder: (context, index) {
           final va = visible[index];
           return _OptionCell(
@@ -146,7 +143,7 @@ class _OptionCell extends StatelessWidget {
       child: Tooltip(
         message: '$count 个作品',
         child: FilterChip(
-          label: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+          label: Text(label, maxLines: 1),
           selected: selected,
           showCheckmark: false,
           shape: const StadiumBorder(),

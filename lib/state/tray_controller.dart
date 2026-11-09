@@ -3,8 +3,8 @@ import 'dart:io' show Platform, exit;
 
 import 'package:flutter/foundation.dart' show debugPrint, kDebugMode;
 import 'package:get/get.dart';
+import 'package:nativeapi/nativeapi.dart';
 import 'package:tray_manager/tray_manager.dart';
-import 'package:window_manager/window_manager.dart';
 
 import '../core/audio/audio_player_service.dart';
 import '../core/audio/playback_item.dart';
@@ -17,13 +17,19 @@ import 'settings_controller.dart';
 ///
 /// 菜单项的点击直接打音频层 —— 不绕 [PlayerController] 的界面状态，
 /// 托盘命令可能在页面销毁之后才到达。
-class TrayController extends GetxController with WindowListener {
+class TrayController extends GetxController {
   /// TrayIcon / Menu / MenuItem **必须**持有引用，否则被 GC 时原生句柄被释放，
   /// 图标或菜单项随之消失。
   TrayIcon? _tray;
   Menu? _menu;
   MenuItem? _currentTrackItem;
   MenuItem? _playPauseItem;
+
+  /// 应用自己的原生窗口 —— 解析一次就缓存住。
+  Window? _window;
+
+  /// 窗口事件监听的句柄，销毁时摘掉。
+  ListenerId? _windowListenerId;
 
   /// 窗口是否可见 —— 只用于决定菜单项文案，不参与点击分支判断。
   bool _windowVisible = true;
@@ -47,7 +53,12 @@ class TrayController extends GetxController with WindowListener {
       worker.dispose();
     }
     _workers.clear();
-    windowManager.removeListener(this);
+    final listenerId = _windowListenerId;
+    final window = _window;
+    if (listenerId != null && window != null) {
+      window.removeListener(listenerId);
+    }
+    _windowListenerId = null;
     _tray?.dispose();
     _menu?.dispose();
     super.onClose();
@@ -216,13 +227,16 @@ class TrayController extends GetxController with WindowListener {
   /// 显隐判断现查原生真值，不用本地缓存：标题栏 X、任务栏最小化都不保证
   /// 发 focus/blur 事件，缓存会失真。
   Future<void> _toggleWindow() async {
+    final window = _window;
+    if (window == null) return;
     try {
-      final visible = await windowManager.isVisible();
+      final visible = window.isVisible;
       if (visible) {
-        await windowManager.hide();
+        window.hide();
       } else {
-        await windowManager.show();
-        await windowManager.focus();
+        if (window.isMinimized) window.restore();
+        window.show();
+        window.focus();
       }
       _syncWindowState(!visible);
     } catch (e) {
@@ -250,7 +264,7 @@ class TrayController extends GetxController with WindowListener {
       if (Get.isRegistered<AudioPlayerService>()) {
         await Get.delete<AudioPlayerService>(force: true);
       }
-      await windowManager.destroy();
+      _window?.close();
     } finally {
       exit(0);
     }
@@ -262,8 +276,37 @@ class TrayController extends GetxController with WindowListener {
 
   /// 拦截标题栏的关闭按钮，所有桌面平台都要拦：窗口销毁会拆掉 Dart VM。
   Future<void> _initWindowCloseIntercept() async {
-    windowManager.addListener(this);
-    await windowManager.setPreventClose(true);
+    final window = _tryNative(() => WindowManager.instance.getCurrent());
+    if (window == null) return;
+    _window = window;
+    _windowListenerId = window.addListener(_onWindowEvent);
+  }
+
+  /// 在 widget 测试等没有原生库的环境里，nativeapi 会抛 [ArgumentError]，
+  /// 用它兜底返回 null，托盘逻辑整体退化成 no-op。
+  T? _tryNative<T>(T Function() body) {
+    try {
+      return body();
+    } on ArgumentError {
+      return null;
+    }
+  }
+
+  void _onWindowEvent(WindowEvent event) {
+    switch (event) {
+      case WindowCloseRequestedEvent(:final request):
+        // 真正退出时不能 cancel，否则窗口关不掉；不拦即放行。
+        if (_quitting) return;
+        request.cancel();
+        _handleCloseRequest();
+      case WindowFocusedEvent() ||
+          WindowBlurredEvent() ||
+          WindowMinimizedEvent() ||
+          WindowRestoredEvent():
+        unawaited(_refreshWindowState());
+      default:
+        break;
+    }
   }
 
   /// 设置页「窗口退出按钮」打开后，Linux/Windows 点 X 也隐藏到托盘。
@@ -273,35 +316,16 @@ class TrayController extends GetxController with WindowListener {
       Get.isRegistered<SettingsController>() &&
       Get.find<SettingsController>().exitToTray.value;
 
-  @override
-  void onWindowClose() {
+  /// 标题栏关闭请求的统一处理：macOS 或「退出到托盘」打开时隐藏窗口，
+  /// 否则真正退出。
+  void _handleCloseRequest() {
     if (Platform.isMacOS || _exitToTrayEnabled) {
       // macOS 点 X → 隐藏到托盘（历史行为，不受开关影响）
-      unawaited(windowManager.hide());
+      _window?.hide();
       _syncWindowState(false);
       return;
     }
     _quit();
-  }
-
-  @override
-  void onWindowFocus() {
-    unawaited(_refreshWindowState());
-  }
-
-  @override
-  void onWindowBlur() {
-    unawaited(_refreshWindowState());
-  }
-
-  @override
-  void onWindowMinimize() {
-    unawaited(_refreshWindowState());
-  }
-
-  @override
-  void onWindowRestore() {
-    unawaited(_refreshWindowState());
   }
 
   /// 从原生窗口读一次可见性并同步菜单文案。
@@ -309,8 +333,10 @@ class TrayController extends GetxController with WindowListener {
   /// focus/blur/minimize 只表示焦点或图标状态变了，**不等于**窗口被隐藏，
   /// 所以这些回调里不能直接推断可见性。
   Future<void> _refreshWindowState() async {
+    final window = _window;
+    if (window == null) return;
     try {
-      _syncWindowState(await windowManager.isVisible());
+      _syncWindowState(window.isVisible);
     } catch (e) {
       if (kDebugMode) debugPrint('[TrayController] 刷新窗口状态失败: $e');
     }

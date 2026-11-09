@@ -55,11 +55,18 @@ dependencies:
   # 设置页:本地存储(主题/强调色/退出行为)、配色方案与取色器、
   # 版本信息、桌面端托盘与窗口管理。
   get_storage:
-  flex_color_scheme: 
-  flex_color_picker: 
+  # flex_color_scheme 9.x / flex_color_picker 4.x 把 ThemeData 换成了
+  # material_ui / cupertino_ui 这两个独立分叉的 Material 库，跟 Flutter 自带的
+  # material.dart 不是同一个类，GetX 的 GetMaterialApp 也接不上。
+  # 先 pin 在 8.x / 3.x，等上游出适配 Flutter 版本的版本再升。
+  flex_color_scheme: ^8.4.0
+  flex_color_picker: ^3.8.0
   package_info_plus: 
   tray_manager: 
   window_manager: 
+  # window_manager 0.6 起底层改用 nativeapi（Dart Native Assets），
+  # 托盘控制器直接用它的 Window / WindowEvent API。
+  nativeapi:
 dev_dependencies:
   flutter_test:
     sdk: flutter
