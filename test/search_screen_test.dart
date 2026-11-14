@@ -130,7 +130,7 @@ void main() {
     );
   });
 
-  testWidgets('筛选面板用网格排布选项', (tester) async {
+  testWidgets('筛选面板把选项排在同一行', (tester) async {
     await pumpSearch(tester);
 
     await tester.tap(find.byIcon(Icons.filter_list));
@@ -141,6 +141,21 @@ void main() {
     final second = tester.getTopLeft(find.text('治愈'));
     expect(second.dx, greaterThan(first.dx));
     expect(second.dy, closeTo(first.dy, 1));
+  });
+
+  testWidgets('筛选面板按文字宽度排布选项', (tester) async {
+    await pumpSearch(tester);
+
+    await tester.tap(find.byIcon(Icons.filter_list));
+    await tester.pumpAndSettle();
+
+    final widths = <double>[
+      for (final label in ['ASMR', '治愈', '测试标签'])
+        tester.getSize(find.widgetWithText(FilterChip, label)).width,
+    ];
+    // 宽度跟着文字走，而不是排成等宽的列。
+    expect(widths.toSet().length, greaterThan(1));
+    expect(widths[1], lessThan(widths[0]));
   });
 
   testWidgets('筛选面板可以按声优筛选', (tester) async {

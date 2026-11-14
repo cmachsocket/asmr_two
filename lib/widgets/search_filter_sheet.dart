@@ -1,4 +1,3 @@
-import 'package:aspect_driven_grid/aspect_driven_grid.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -7,21 +6,6 @@ import '../controller/search_controller.dart';
 /// 筛选面板，按标签或声优筛选作品。
 class SearchFilterSheet extends GetView<SearchScreenController> {
   const SearchFilterSheet({super.key});
-
-  /// 基准宽高比下的行数。
-  static const int baseRows = 4;
-
-  /// 基准宽高比，1 表示 1:1。
-  static const double baseRatio = 1;
-
-  /// 列数下限。
-  static const int minColumns = 2;
-
-  /// 列数上限。
-  static const int maxColumns = 6;
-
-  /// 单项的宽高比。
-  static const double childAspectRatio = 1.8;
 
   @override
   Widget build(BuildContext context) {
@@ -81,40 +65,32 @@ class SearchFilterSheet extends GetView<SearchScreenController> {
       }
       if (controller.category.value == FilterCategory.tag) {
         final visible = controller.visibleTags;
-        return AspectDrivenGrid(
-          itemCount: visible.length,
-          baseRows: baseRows,
-          baseRatio: baseRatio,
-          minColumns: minColumns,
-          maxColumns: maxColumns,
-          childAspectRatio: childAspectRatio,
-          itemBuilder: (context, index) {
-            final tag = visible[index];
-            return _OptionCell(
+        return _optionFlow([
+          for (final tag in visible)
+            _OptionCell(
               label: controller.tagLabel(tag),
               count: tag.count,
               selected: controller.selectedTags.contains(tag.name),
               onTap: () => controller.toggleTag(tag.name),
-            );
-          },
-        );
+            ),
+        ]);
       }
       final visible = controller.visibleVoiceActors;
-      return MasonryAspectDrivenGrid(
-        itemCount: visible.length,
-        baseRows: baseRows,
-        baseRatio: baseRatio,
-        itemBuilder: (context, index) {
-          final va = visible[index];
-          return _OptionCell(
+      return _optionFlow([
+        for (final va in visible)
+          _OptionCell(
             label: va.name,
             count: va.count,
             selected: controller.selectedVoiceActors.contains(va.name),
             onTap: () => controller.toggleVoiceActor(va.name),
-          );
-        },
-      );
+          ),
+      ]);
     });
+  }
+
+  /// 选项按内容宽度排布，一行放不下就换行，因此每行的选项数量随文字长度变化。
+  Widget _optionFlow(List<Widget> children) {
+    return SingleChildScrollView(child: Wrap(children: children));
   }
 }
 
@@ -139,18 +115,16 @@ class _OptionCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    return Center(
-      child: Tooltip(
-        message: '$count 个作品',
-        child: FilterChip(
-          label: Text(label, maxLines: 1),
-          selected: selected,
-          showCheckmark: false,
-          shape: const StadiumBorder(),
-          backgroundColor: colorScheme.surfaceContainerHighest,
-          selectedColor: colorScheme.primaryContainer,
-          onSelected: (_) => onTap(),
-        ),
+    return Tooltip(
+      message: '$count 个作品',
+      child: FilterChip(
+        label: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+        selected: selected,
+        showCheckmark: false,
+        shape: const StadiumBorder(),
+        backgroundColor: colorScheme.surfaceContainerHighest,
+        selectedColor: colorScheme.primaryContainer,
+        onSelected: (_) => onTap(),
       ),
     );
   }
