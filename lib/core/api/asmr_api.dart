@@ -36,15 +36,15 @@ class AsmrApi {
 
   /// 作品列表。
   ///
-  /// [subtitle] 只支持 `1`（有字幕）与 `0`（无字幕），
-  /// 不传则不限制。
+  /// [subtitle] 为 true 时只取有字幕的作品；
+  /// 上游不接受「只看无字幕」，不传则不限制。
   Future<WorksPage> fetchWorks({
     WorkOrder order = WorkOrder.createDate,
     SortDirection sort = SortDirection.desc,
     int page = 1,
     int pageSize = 20,
     int? seed,
-    int? subtitle,
+    bool subtitle = false,
     List<String> withPlaylistStatus = const [],
   }) async {
     final data = await client.get(
@@ -63,7 +63,7 @@ class AsmrApi {
   }
 
   /// 随机作品（「随便听听」）。
-  Future<Work?> fetchRandomWork({int? seed, int? subtitle}) async {
+  Future<Work?> fetchRandomWork({int? seed, bool subtitle = false}) async {
     final page = seed ?? DateTime.now().millisecondsSinceEpoch % 200 + 1;
     final result = await fetchWorks(
       order: WorkOrder.random,
@@ -112,7 +112,7 @@ class AsmrApi {
     int page = 1,
     int pageSize = 20,
     int? seed,
-    int? subtitle,
+    bool subtitle = false,
     bool includeTranslationWorks = true,
     List<String> withPlaylistStatus = const [],
   }) async {
@@ -423,20 +423,22 @@ class AsmrApi {
   // ---------------------------------------------------------------------------
 
   /// 个性化推荐。
+  ///
+  /// 上游要求带上 [recommenderUuid]，缺失会返回 401。
   Future<WorksPage> fetchRecommended({
-    String? recommenderUuid,
+    required String recommenderUuid,
     int page = 1,
     int pageSize = 20,
-    int? subtitle,
+    bool subtitle = false,
   }) async {
     final data = await client.post(
       ApiEndpoints.recommendForUser,
       body: {
         'keyword': '',
-        'recommenderUuid': ?recommenderUuid,
+        'recommenderUuid': recommenderUuid,
         'page': page,
         'pageSize': pageSize,
-        'subtitle': subtitle,
+        'subtitle': subtitle ? 1 : null,
         'localSubtitledWorks': const <int>[],
         'withPlaylistStatus': const <String>[],
       },
@@ -449,7 +451,7 @@ class AsmrApi {
   Future<WorksPage> fetchPopular({
     int page = 1,
     int pageSize = 20,
-    int? subtitle,
+    bool subtitle = false,
   }) async {
     final data = await client.post(
       ApiEndpoints.recommendPopular,
@@ -457,7 +459,7 @@ class AsmrApi {
         'keyword': '',
         'page': page,
         'pageSize': pageSize,
-        'subtitle': subtitle,
+        'subtitle': subtitle ? 1 : null,
         'localSubtitledWorks': const <int>[],
         'withPlaylistStatus': const <String>[],
       },
@@ -483,16 +485,18 @@ class AsmrApi {
   }
 
   /// 上报推荐系统的行为。
+  ///
+  /// 上游要求带上 [recommenderUuid]，缺失会返回 401。
   Future<void> reportFeedback({
     required FeedbackType type,
     required int workId,
-    String? recommenderUuid,
+    required String recommenderUuid,
   }) async {
     await client.post(
       ApiEndpoints.recommendFeedback,
       body: {
         'type': type.value,
-        'recommenderUuid': ?recommenderUuid,
+        'recommenderUuid': recommenderUuid,
         'itemId': workId,
       },
       auth: true,
@@ -580,7 +584,7 @@ class AsmrApi {
     required int page,
     required int pageSize,
     int? seed,
-    int? subtitle,
+    bool subtitle = false,
     List<String> withPlaylistStatus = const [],
     Map<String, dynamic> extra = const {},
   }) {
@@ -590,7 +594,7 @@ class AsmrApi {
       'page': page,
       'pageSize': pageSize,
       'seed': ?seed,
-      'subtitle': ?subtitle,
+      if (subtitle) 'subtitle': 1,
       if (withPlaylistStatus.isNotEmpty)
         'withPlaylistStatus[]': withPlaylistStatus,
       ...extra,

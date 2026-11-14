@@ -75,6 +75,21 @@ void main() {
       expect(tracks.single.children.single.hash, '1/2');
       expect(adapter.requests.single.uri.queryParameters['v'], '2');
     });
+
+    test('只筛选有字幕时发送 subtitle=1', () async {
+      await api.fetchWorks(subtitle: true);
+
+      expect(adapter.requests.single.queryParameters['subtitle'], 1);
+    });
+
+    test('不筛选字幕时不发送 subtitle 参数', () async {
+      await api.fetchWorks();
+
+      expect(
+        adapter.requests.single.queryParameters.containsKey('subtitle'),
+        isFalse,
+      );
+    });
   });
 
   group('搜索接口', () {
@@ -267,6 +282,29 @@ void main() {
       );
       expect(adapter.requests.single.queryParameters['id'], 'uuid');
       expect(adapter.requests.single.queryParameters['page'], 2);
+    });
+  });
+
+  group('推荐接口', () {
+    test('个性化推荐带上 recommenderUuid', () async {
+      await api.fetchRecommended(recommenderUuid: 'uuid-1');
+
+      final request = adapter.requests.single;
+      expect(request.uri.path, '/api/recommender/recommend-for-user');
+      expect(request.data['recommenderUuid'], 'uuid-1');
+    });
+
+    test('行为上报带上 recommenderUuid', () async {
+      await api.reportFeedback(
+        type: FeedbackType.startListen,
+        workId: 42,
+        recommenderUuid: 'uuid-1',
+      );
+
+      final request = adapter.requests.single;
+      expect(request.uri.path, '/api/recommender/feedback');
+      expect(request.data['recommenderUuid'], 'uuid-1');
+      expect(request.data['itemId'], 42);
     });
   });
 

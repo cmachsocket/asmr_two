@@ -115,7 +115,7 @@
 | `page` | int | 页码，从 1 开始 |
 | `pageSize` | int | 每页数量 |
 | `seed` | int | 随机种子，配合 `order=random` 使用 |
-| `subtitle` | int | `1` 只看有字幕，`0` 只看无字幕；不传不限制 |
+| `subtitle` | int | `1` 只看有字幕；不传不限制。上游忽略 `0`，无法筛选「无字幕」 |
 | `withPlaylistStatus[]` | string[] | 收藏状态所属的播放列表 id（UUID），可重复 |
 
 响应：`{ works: Work[], pagination }`
@@ -146,6 +146,7 @@ Dart 方法：`fetchWorkInfo`
 | `audio` | 音频，可播放 |
 | `image` | 图片 |
 | `text` | 文本，可能是字幕或台本 |
+| `other` | 其它文件，如 PDF 特典，不可播放 |
 
 标题带字幕扩展名的 `text` 节点是字幕，详见下文「字幕」一节。
 
@@ -191,8 +192,8 @@ Dart 方法：`fetchTracks`
 | `page` | int | 页码 |
 | `pageSize` | int | 每页数量 |
 | `seed` | int | 随机种子 |
-| `subtitle` | int | `1` / `0` |
-| `includeTranslationWorks` | bool | 是否包含翻译版，默认 `true` |
+| `subtitle` | int | `1` 只看有字幕；不传不限制。上游忽略 `0`，无法筛选「无字幕」 |
+| `includeTranslationWorks` | bool | 是否包含翻译版，默认 `true`；上游当前对该参数无实际影响 |
 | `withPlaylistStatus[]` | string[] | 播放列表 id（UUID） |
 
 关键字超过 500 字符时改用 `POST /api/search/`，请求体为
@@ -422,6 +423,7 @@ Dart 方法：`fetchMyPlaylists`、`fetchPlaylists`、`fetchPlaylistWorks`、`fe
 ### POST `/api/recommender/recommend-for-user`
 
 个性化推荐。请求体在热门推荐基础上多一个 `recommenderUuid`，取自 `GET /api/auth/me`。
+该字段必填，缺失时返回 `401 Unauthorized`。
 
 ### POST `/api/recommender/item-neighbors`
 
@@ -430,6 +432,7 @@ Dart 方法：`fetchMyPlaylists`、`fetchPlaylists`、`fetchPlaylistWorks`、`fe
 ### POST `/api/recommender/feedback`
 
 行为上报。请求体 `{ type, recommenderUuid, itemId }`，`type` 见 `FeedbackType`。响应为 `1`。
+`recommenderUuid` 必填，缺失时返回 `401 Unauthorized`。
 
 Dart 方法：`fetchPopular`、`fetchRecommended`、`fetchSimilarWorks`、`reportFeedback`
 
