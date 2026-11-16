@@ -140,6 +140,9 @@ void main() {
         player: AudioPlayer(
           handleAudioSessionActivation: false,
           handleInterruptions: false,
+          // 测试里不开请求头代理：代理会在本地起一个 HTTP 服务，
+          // 在 widget 测试的假异步环境里 bind 不完，还会留下空闲定时器。
+          useProxyForRequestHeaders: false,
         ),
       ),
     );

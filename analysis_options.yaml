@@ -19,6 +19,14 @@ analyzer:
     - macos/**
     - linux/**
 
+  errors:
+    # Flutter 3.50 起 package:flutter/material.dart 被标记弃用,提示改用独立的
+    # material_ui 包。但 GetX 4.7.3 的 GetMaterialApp 仍建立在 flutter/material 上,
+    # 两套 widget 类型互不兼容(与 flex_color_scheme 钉在 8.x 是同一个原因),
+    # 在 GetX 支持 material_ui 之前先屏蔽该提示,否则 flutter analyze 会因为
+    # info 级别的弃用提示返回非零退出码,把 CI 卡住。
+    deprecated_member_use: ignore
+
 linter:
   # The lint rules applied to this project can be customized in the
   # section below to disable rules from the `package:flutter_lints/flutter.yaml`
