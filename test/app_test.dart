@@ -8,6 +8,7 @@ import 'package:asmr_two/core/storage/session_store.dart';
 import 'package:asmr_two/state/player_controller.dart';
 import 'package:asmr_two/state/subtitle_controller.dart';
 import 'package:asmr_two/state/theme_controller.dart';
+import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
@@ -68,6 +69,26 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byIcon(Icons.add), findsOneWidget);
+
+    addTearDown(() async {
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+    });
+  });
+
+  testWidgets('打开取色对话框能拿到 material_ui 的本地化', (tester) async {
+    await tester.pumpWidget(const AsmrApp());
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+
+    await tester.tap(find.text('设置').last);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.color_lens_outlined));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.byType(ColorPicker), findsOneWidget);
 
     addTearDown(() async {
       await tester.pumpWidget(const SizedBox.shrink());

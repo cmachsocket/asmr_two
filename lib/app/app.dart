@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:material_ui/material_ui.dart' as mu;
 
 import '../screens/home_screen.dart';
 import '../state/theme_controller.dart';
@@ -20,6 +21,17 @@ class AsmrApp extends GetView<ThemeController> {
         theme: controller.lightTheme,
         darkTheme: controller.darkTheme,
         themeMode: controller.mode.value,
+        // flex_color_picker 4.x 的控件基于 material_ui，
+        // 这里在 Navigator 之上补上 material_ui 的本地化和主题，
+        // 取色对话框（走根 Navigator）才拿得到。
+        builder: (context, child) => mu.Theme(
+          data: controller.flexTheme,
+          child: Localizations.override(
+            context: context,
+            delegates: mu.GlobalMaterialLocalizations.delegates,
+            child: child!,
+          ),
+        ),
         home: const HomeScreen(),
       ),
     );

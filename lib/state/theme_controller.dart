@@ -3,6 +3,9 @@ import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:material_ui/material_ui.dart' as mu;
+
+import '../core/theme/flex_theme.dart';
 
 /// 主题模式与强调色。
 ///
@@ -59,17 +62,39 @@ class ThemeController extends GetxController {
     accent.value = c;
   }
 
-  /// 亮色主题。
-  ThemeData get lightTheme => FlexThemeData.light(
+  /// 亮色配色方案。
+  FlexColorScheme get lightScheme => FlexColorScheme.light(
     keyColors: FlexKeyColors(keyPrimary: accent.value),
     appBarStyle: FlexAppBarStyle.background,
   );
 
-  /// 暗色主题。
-  ThemeData get darkTheme => FlexThemeData.dark(
+  /// 暗色配色方案。
+  FlexColorScheme get darkScheme => FlexColorScheme.dark(
     keyColors: FlexKeyColors(keyPrimary: accent.value),
     appBarStyle: FlexAppBarStyle.background,
   );
+
+  /// 亮色主题（Flutter 内置 material，GetMaterialApp 用）。
+  ThemeData get lightTheme => toFlutterTheme(lightScheme.toTheme);
+
+  /// 暗色主题（Flutter 内置 material，GetMaterialApp 用）。
+  ThemeData get darkTheme => toFlutterTheme(darkScheme.toTheme);
+
+  /// 当前生效的 flex 主题（material_ui）。
+  ///
+  /// flex_color_picker 4.x 的控件基于 material_ui，
+  /// 换上当前配色后取色对话框才跟应用一个颜色。
+  mu.ThemeData get flexTheme =>
+      isDarkMode ? darkScheme.toTheme : lightScheme.toTheme;
+
+  /// 当前是不是深色外观。
+  bool get isDarkMode => switch (mode.value) {
+    ThemeMode.light => false,
+    ThemeMode.dark => true,
+    ThemeMode.system =>
+      WidgetsBinding.instance.platformDispatcher.platformBrightness ==
+          Brightness.dark,
+  };
 
   /// 打开取色对话框：确认后写盘，取消后回滚到原色。
   Future<void> openColorPickerDialog() async {
